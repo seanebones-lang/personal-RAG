@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from src.config import CHUNK_STRATEGIES
 from src.core.vault import (
     build_where_from_options,
     get_status_info,
@@ -13,9 +14,10 @@ from src.core.vault import (
     run_purge,
     run_query,
 )
+from src.ui.components.export_ui import render_export_buttons
 from src.ui.components.preview import render_preview_panel
 from src.ui.components.results import render_results
-from src.ui.components.session import add_turn, init_session, render_history_sidebar
+from src.ui.components.session import add_turn, init_session, load_turn, render_history_sidebar
 
 st.set_page_config(page_title="PersonalRAGVault", page_icon="🔒", layout="wide")
 init_session()
@@ -59,6 +61,12 @@ with tab_ingest:
         force = st.checkbox("Force re-ingest (ignore file cache)")
     with col2:
         allow_outside = st.checkbox("Allow outside home")
+    strategies = sorted(CHUNK_STRATEGIES)
+    chunk_pick = st.selectbox(
+        "Chunk strategy (this ingest)",
+        options=["(default from env)"] + strategies,
+    )
+    chunk_strategy = None if chunk_pick == "(default from env)" else chunk_pick
     if st.button("Ingest"):
         try:
             from pathlib import Path
@@ -70,16 +78,19 @@ with tab_ingest:
                     allow_outside_home=allow_outside,
                     force=force,
                     show_progress=False,
+                    chunk_strategy=chunk_strategy,
                 )
             st.success(f"Ingested {n} chunks.")
         except Exception as exc:
             st.error(str(exc))
 
 with tab_query:
-    question = st.text_input("Question", placeholder="What do my notes say about…")
     top_k = st.slider("Top K", 1, 20, 5)
     hybrid = st.checkbox("Hybrid search (BM25 + vector)")
     no_llm = st.checkbox("Retrieval only (no Ollama)")
+    multi_query = st.checkbox("Multi-query fusion")
+    rerank = st.checkbox("Cross-encoder rerank")
+    parent_expand = st.checkbox("Parent document expand")
     with st.expander("Filters"):
         where_year = st.number_input("Year", min_value=1990, max_value=2100, value=0, step=1)
         where_year_val = int(where_year) if where_year > 0 else None
@@ -87,42 +98,71 @@ with tab_query:
         extension = st.text_input("Extension (e.g. .pdf)")
 
     col_main, col_preview = st.columns([2, 1])
+
+    def _run_search(question: str) -> None:
+        if not question.strip():
+            st.warning("Enter a question.")
+            return
+        try:
+            where = build_where_from_options(
+                where_year=where_year_val,
+                source_contains=source_contains or None,
+                extension=extension or None,
+            )
+            with st.spinner("Searching..."):
+                out = run_query(
+                    question,
+                    top_k=top_k,
+                    where=where,
+                    hybrid=hybrid,
+                    use_llm=not no_llm,
+                    multi_query=multi_query,
+                    rerank=rerank,
+                    parent_expand=parent_expand,
+                )
+            add_turn(question, out.get("answer"), out["results"])
+            st.session_state.last_query_out = out
+        except Exception as exc:
+            st.error(str(exc))
+
     with col_main:
-        if st.button("Search"):
-            if not question.strip():
-                st.warning("Enter a question.")
-            else:
-                try:
-                    where = build_where_from_options(
-                        where_year=where_year_val,
-                        source_contains=source_contains or None,
-                        extension=extension or None,
-                    )
-                    with st.spinner("Searching..."):
-                        out = run_query(
-                            question,
-                            top_k=top_k,
-                            where=where,
-                            hybrid=hybrid,
-                            use_llm=not no_llm,
-                        )
-                    add_turn(question, out.get("answer"), out["results"])
-                    if out["answer"]:
-                        st.subheader("Answer")
-                        st.write(out["answer"])
-                    elif out["llm_error"]:
-                        st.warning(out["llm_error"])
+        if hasattr(st, "chat_input"):
+            question = st.chat_input("Ask about your vault…")
+            if question:
+                _run_search(question)
+        else:
+            question = st.text_input("Question", placeholder="What do my notes say about…")
+            if st.button("Search") and question:
+                _run_search(question)
 
-                    def _select(src: str) -> None:
-                        st.session_state.selected_source = src
+        active = None
+        if st.session_state.active_turn is not None:
+            active = load_turn(st.session_state.active_turn)
+        elif st.session_state.messages:
+            active = st.session_state.messages[-1]
 
-                    sel = render_results(out["results"], on_select=_select)
-                    if sel:
-                        st.session_state.selected_source = sel
-                except Exception as exc:
-                    st.error(str(exc))
+        if active:
+            st.chat_message("user").write(active["question"])
+            if active.get("answer"):
+                st.chat_message("assistant").write(active["answer"])
+            results = active.get("results", [])
+
+            def _select(src: str, excerpt: str) -> None:
+                st.session_state.selected_source = src
+                st.session_state.selected_excerpt = excerpt
+
+            render_results(results, on_select=_select)
+            render_export_buttons(
+                active["question"],
+                active.get("answer"),
+                results,
+            )
+
     with col_preview:
-        render_preview_panel(st.session_state.selected_source)
+        render_preview_panel(
+            st.session_state.selected_source,
+            st.session_state.get("selected_excerpt"),
+        )
 
 with tab_models:
     st.table(list_embed_presets())

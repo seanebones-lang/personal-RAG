@@ -18,6 +18,13 @@ from src.filters import build_where
 from src.ingest.pipeline import build_documents_from_folder
 from src.ollama_client import build_context, check_ollama_model, generate_answer
 from src.retrieval.hybrid import hybrid_search
+from src.retrieval.multi_query import (
+    expand_queries_heuristic,
+    expand_queries_ollama,
+    multi_query_search,
+)
+from src.retrieval.parent import expand_parent_chunks
+from src.retrieval.rerank import rerank_results
 from src.store.vectorstore import (
     compact_maintenance,
     count_documents,
@@ -80,14 +87,28 @@ def run_ingest(
     allow_outside_home: bool = False,
     force: bool = False,
     show_progress: bool = True,
+    chunk_strategy: Optional[str] = None,
 ) -> int:
-    ensure_embedding_compatible()
-    docs = build_documents_from_folder(
-        path,
-        recursive=recursive,
-        allow_outside_home=allow_outside_home,
-        force_reingest=force,
+    from src.config import normalize_chunk_strategy
+    from src.ingest.chunking.context import (
+        reset_chunk_strategy_override,
+        set_chunk_strategy_override,
     )
+
+    ensure_embedding_compatible()
+    token = None
+    if chunk_strategy:
+        token = set_chunk_strategy_override(normalize_chunk_strategy(chunk_strategy))
+    try:
+        docs = build_documents_from_folder(
+            path,
+            recursive=recursive,
+            allow_outside_home=allow_outside_home,
+            force_reingest=force,
+        )
+    finally:
+        if token is not None:
+            reset_chunk_strategy_override(token)
     if not docs:
         return 0
 
@@ -108,27 +129,62 @@ def run_query(
     where: Optional[Dict[str, Any]] = None,
     hybrid: bool = False,
     use_llm: bool = True,
+    multi_query: bool = False,
+    expand_query: bool = False,
+    rerank: bool = False,
+    parent_expand: bool = False,
 ) -> Dict[str, Any]:
     settings = get_settings()
-    query_embedding = embed_query(question)
+    use_multi = multi_query or settings.multi_query
+    use_expand = expand_query or settings.expand_query_ollama
+    use_rerank = rerank or settings.rerank
+    use_parent = parent_expand or settings.parent_expand
 
-    if hybrid:
+    def _vector_search(emb, k: int) -> List[Dict[str, Any]]:
+        return search(emb, top_k=k, max_distance=max_distance, where=where)
+
+    if use_multi:
+        if use_expand:
+            try:
+                queries = expand_queries_ollama(question)
+            except Exception:
+                queries = expand_queries_heuristic(question)
+        else:
+            queries = expand_queries_heuristic(question)
+        results = multi_query_search(
+            queries,
+            search_fn=_vector_search,
+            embed_fn=embed_query,
+            top_k=settings.rerank_candidates if use_rerank else top_k,
+            rrf_k=settings.hybrid_rrf_k,
+        )
+    elif hybrid:
+        query_embedding = embed_query(question)
         results = hybrid_search(
             query_text=question,
             query_embedding=query_embedding,
             vector_search_fn=search,
             fetch_corpus_fn=fetch_corpus,
-            top_k=top_k,
+            top_k=settings.rerank_candidates if use_rerank else top_k,
             where=where,
             max_distance=max_distance,
         )
     else:
+        query_embedding = embed_query(question)
         results = search(
             query_embedding,
-            top_k=top_k,
+            top_k=settings.rerank_candidates if use_rerank else top_k,
             max_distance=max_distance,
             where=where,
         )
+
+    if use_rerank and results:
+        results = rerank_results(question, results, top_k, model_name=settings.rerank_model)
+    elif len(results) > top_k:
+        results = results[:top_k]
+
+    if use_parent:
+        results = expand_parent_chunks(results)
 
     context = build_context(results, settings.max_context_chars)
     answer = None
@@ -190,6 +246,25 @@ def run_purge() -> None:
 
 def run_compact() -> Dict[str, int]:
     return compact_maintenance()
+
+
+def highlight_excerpt(full_text: str, excerpt: str, max_excerpt: int = 500) -> str:
+    """Wrap first matching excerpt in markdown bold for UI preview."""
+    if not excerpt or not full_text:
+        return full_text
+    needle = excerpt[:max_excerpt].strip()
+    if len(needle) < 10:
+        return full_text
+    idx = full_text.find(needle)
+    if idx < 0:
+        short = needle[:80]
+        idx = full_text.find(short)
+        if idx < 0:
+            return full_text
+        needle = short
+    before = full_text[:idx]
+    after = full_text[idx + len(needle) :]
+    return f"{before}**{needle}**{after}"
 
 
 def preview_source(source_path: str, max_chars: int = 4000) -> str:

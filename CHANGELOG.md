@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-30
+
+### Added
+
+- Eval: NDCG@k, `personalragvault eval generate` for synthetic datasets
+- Chunking: `semantic_embed`, `prose` alias, `PRV_CHUNK_STRATEGY_BY_EXT`, `--chunk-strategy` on ingest
+- Retrieval: `--multi-query`, `--expand-query`, `--rerank`, `--parent-expand` (+ env defaults)
+- Metadata `parent_id` for parent-document expansion
+- UI: `st.chat_input` chat layout, history restore, excerpt highlighting, JSON/Markdown export
+- CLI: `query --output` JSON export
+- Docs: [community.md](docs/community.md), [assets/DEMO.md](docs/assets/DEMO.md)
+
 ## [0.3.0] - 2026-05-30
 
 ### Added

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -40,8 +41,11 @@ def build_chunk_metadata(
     except ValueError:
         relative = resolved.name
 
+    parent_id = hashlib.sha256(str(resolved).encode("utf-8")).hexdigest()[:16]
+
     meta: Dict[str, Any] = {
         "source": str(resolved),
+        "parent_id": parent_id,
         "file_name": resolved.name,
         "extension": resolved.suffix.lower(),
         "mtime": mtime,

@@ -8,6 +8,8 @@
 
 No cloud. No account. Your data stays on your disk.
 
+If this project helps you, consider starring the repo on GitHub.
+
 ## Why PersonalRAGVault?
 
 - **Private** — runs entirely on your Mac or Linux machine
@@ -44,10 +46,18 @@ personalragvault query "find my notes about RAG systems"
 
 See **[docs/getting-started.md](docs/getting-started.md)** for the full walkthrough.
 
+## New in v1.0
+
+- `personalragvault eval run` — Hit@k, MRR, and **NDCG@k**; `eval generate` for draft datasets
+- **Advanced retrieval:** `--multi-query`, `--rerank`, `--parent-expand`
+- **Chunking:** `semantic_embed`, per-extension overrides, `--chunk-strategy` on ingest
+- **UI:** chat layout, source highlighting, export JSON/Markdown, richer history
+
+See [docs/assets/DEMO.md](docs/assets/DEMO.md) to add a README demo GIF.
+
 ## New in v0.3
 
-- `PRV_CHUNK_STRATEGY` — `char`, `recursive`, or `semantic` chunking
-- `personalragvault eval run` — Hit@k and MRR on a JSONL dataset
+- `PRV_CHUNK_STRATEGY` — `char`, `recursive`, or `prose` chunking
 - Telegram `result.json` and Obsidian frontmatter/tag metadata
 - UI: result cards, history sidebar, document preview, compact tab
 - `PRV_HNSW_SEARCH_EF` / `PRV_USE_EMBEDDING_CACHE` for larger vaults
@@ -72,6 +82,8 @@ See **[docs/getting-started.md](docs/getting-started.md)** for the full walkthro
 | [Architecture](docs/architecture.md) | How the pipeline works |
 | [FAQ](docs/faq.md) | Troubleshooting |
 | [Development](docs/development.md) | Tests, lint, CI |
+| [Evaluation](docs/evaluation.md) | Hit@k, MRR, NDCG, synthetic datasets |
+| [Community](docs/community.md) | GitHub topics and demo GIF |
 | [Contributing](CONTRIBUTING.md) | Issues and pull requests |
 
 ## Requirements

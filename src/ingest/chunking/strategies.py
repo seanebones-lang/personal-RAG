@@ -8,7 +8,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple
 
-from src.config import get_settings
+import numpy as np
+
+from src.config import get_settings, normalize_chunk_strategy
+from src.ingest.chunking.context import get_chunk_strategy_override
 
 
 @dataclass
@@ -18,27 +21,44 @@ class TextChunk:
 
 
 _FENCE_RE = re.compile(r"^```[\w]*$", re.MULTILINE)
+_SENTENCE_RE = re.compile(r"(?<=[.!?])\s+")
+
+
+def resolve_chunk_strategy(file_path: Path) -> str:
+    """Effective strategy: override, per-extension map, then global default."""
+    override = get_chunk_strategy_override()
+    if override:
+        return normalize_chunk_strategy(override)
+    settings = get_settings()
+    suffix = file_path.suffix.lower()
+    if suffix in settings.chunk_strategy_by_ext:
+        return settings.chunk_strategy_by_ext[suffix]
+    return settings.chunk_strategy
 
 
 def chunk_document(text: str, file_path: Path) -> List[TextChunk]:
     """Split document text using configured strategy and file-type rules."""
     settings = get_settings()
+    strategy = resolve_chunk_strategy(file_path)
     suffix = file_path.suffix.lower()
 
     if suffix == ".py":
-        return _chunk_python(text, settings)
+        return _chunk_python(text, settings, strategy)
     if suffix in {".md", ".markdown"}:
-        return _chunk_markdown(text, settings)
+        return _chunk_markdown(text, settings, strategy)
 
-    strategy = settings.chunk_strategy
-    if strategy == "recursive":
-        parts = _recursive_split(text, settings.chunk_min_size, settings.chunk_max_size)
-    elif strategy == "semantic":
-        parts = _semantic_split(text, settings)
-    else:
-        parts = _char_split(text, settings.chunk_size, settings.chunk_overlap)
-
+    parts = _split_by_strategy(text, settings, strategy)
     return [TextChunk(text=p, extra={}) for p in parts if p.strip()]
+
+
+def _split_by_strategy(text: str, settings, strategy: str) -> List[str]:
+    if strategy == "recursive":
+        return _recursive_split(text, settings.chunk_min_size, settings.chunk_max_size)
+    if strategy in ("semantic", "prose"):
+        return _prose_split(text, settings)
+    if strategy == "semantic_embed":
+        return _semantic_embed_split(text, settings)
+    return _char_split(text, settings.chunk_size, settings.chunk_overlap)
 
 
 def _char_split(text: str, chunk_size: int, overlap: int) -> List[str]:
@@ -88,7 +108,7 @@ def _split_recursive(text: str, separators: List[str], max_size: int, min_size: 
     return chunks
 
 
-def _semantic_split(text: str, settings) -> List[str]:
+def _prose_split(text: str, settings) -> List[str]:
     """Paragraph-first merge up to max chunk size, then recursive overflow."""
     paragraphs = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
     if not paragraphs:
@@ -118,16 +138,71 @@ def _semantic_split(text: str, settings) -> List[str]:
     return out
 
 
-def _chunk_markdown(text: str, settings) -> List[TextChunk]:
+def _semantic_embed_split(text: str, settings) -> List[str]:
+    """Split on embedding similarity breakpoints between sentences."""
+    sentences = [s.strip() for s in _SENTENCE_RE.split(text.strip()) if s.strip()]
+    if not sentences:
+        return []
+    if len(sentences) == 1:
+        return sentences if len(sentences[0]) <= settings.chunk_max_size else _recursive_split(
+            sentences[0], settings.chunk_min_size, settings.chunk_max_size
+        )
+
+    from src.embed.embedder import embed_texts
+
+    vectors = embed_texts(sentences, show_progress=False)
+    if len(vectors) < 2:
+        return _merge_sentences_to_chunks(sentences, settings.chunk_max_size)
+
+    groups: List[List[str]] = [[sentences[0]]]
+    for i in range(1, len(sentences)):
+        sim = _cosine_similarity(vectors[i - 1], vectors[i])
+        if sim < settings.semantic_threshold:
+            groups.append([sentences[i]])
+        else:
+            groups[-1].append(sentences[i])
+
+    chunks: List[str] = []
+    for group in groups:
+        merged = " ".join(group)
+        if len(merged) <= settings.chunk_max_size:
+            chunks.append(merged)
+        else:
+            chunks.extend(
+                _recursive_split(merged, settings.chunk_min_size, settings.chunk_max_size)
+            )
+    return chunks
+
+
+def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
+    na = np.linalg.norm(a)
+    nb = np.linalg.norm(b)
+    if na == 0 or nb == 0:
+        return 0.0
+    return float(np.dot(a, b) / (na * nb))
+
+
+def _merge_sentences_to_chunks(sentences: List[str], max_size: int) -> List[str]:
+    chunks: List[str] = []
+    current = ""
+    for s in sentences:
+        candidate = f"{current} {s}".strip() if current else s
+        if len(candidate) <= max_size:
+            current = candidate
+        else:
+            if current:
+                chunks.append(current)
+            current = s
+    if current:
+        chunks.append(current)
+    return chunks
+
+
+def _chunk_markdown(text: str, settings, strategy: str) -> List[TextChunk]:
     sections = _split_markdown_sections(text)
     chunks: List[TextChunk] = []
     for title, body in sections:
-        if settings.chunk_strategy == "char":
-            parts = _char_split(body, settings.chunk_size, settings.chunk_overlap)
-        elif settings.chunk_strategy == "recursive":
-            parts = _recursive_split(body, settings.chunk_min_size, settings.chunk_max_size)
-        else:
-            parts = _semantic_split(body, settings)
+        parts = _split_by_strategy(body, settings, strategy)
         for p in parts:
             extra = {"section_title": title[:200]} if title else {}
             chunks.append(TextChunk(text=p, extra=extra))
@@ -165,11 +240,11 @@ def _split_markdown_sections(text: str) -> List[Tuple[str, str]]:
     return sections
 
 
-def _chunk_python(text: str, settings) -> List[TextChunk]:
+def _chunk_python(text: str, settings, strategy: str) -> List[TextChunk]:
     try:
         tree = ast.parse(text)
     except SyntaxError:
-        parts = _recursive_split(text, settings.chunk_min_size, settings.chunk_max_size)
+        parts = _split_by_strategy(text, settings, strategy)
         return [TextChunk(text=p, extra={"chunk_kind": "python"}) for p in parts]
 
     lines = text.splitlines(keepends=True)
@@ -193,6 +268,6 @@ def _chunk_python(text: str, settings) -> List[TextChunk]:
                 ):
                     chunks.append(TextChunk(text=p, extra={"chunk_kind": "python"}))
     if not chunks:
-        parts = _recursive_split(text, settings.chunk_min_size, settings.chunk_max_size)
+        parts = _split_by_strategy(text, settings, strategy)
         return [TextChunk(text=p, extra={}) for p in parts]
     return chunks

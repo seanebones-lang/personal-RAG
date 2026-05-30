@@ -1,33 +1,34 @@
 # Roadmap
 
-PersonalRAGVault evolves in phased releases. v0.2 shipped the core production CLI; **v0.3** adds measurement, UI polish, advanced chunking, scale tuning, and new data sources.
+PersonalRAGVault evolves in phased releases. **v1.0** ships evaluation depth, advanced retrieval, chunking flexibility, and UI export/chat polish.
 
 ## Shipped
 
 | Version | Highlights |
 |---------|------------|
 | **v0.2** | Chunking, hybrid search, eml/mbox, filters, file cache, FTS, Streamlit MVP |
-| **v0.3** | Eval harness, UI components, recursive/semantic chunking, HNSW config, embedding cache, Telegram/Obsidian parsers |
+| **v0.3** | Eval harness (Hit@k, MRR), UI components, recursive/semantic chunking, HNSW, Telegram/Obsidian |
+| **v1.0** | NDCG, `eval generate`, `semantic_embed`, multi-query, rerank, parent expand, UI export/highlight/chat |
 
-## v0.3 features (current)
+## v1.0 features (current)
 
-- **UI:** Result cards, conversation history sidebar, document preview, maintenance tab
-- **Chunking:** `PRV_CHUNK_STRATEGY=char|recursive|semantic`; markdown/code-aware splits
-- **Scale:** `PRV_HNSW_SEARCH_EF`, `PRV_HNSW_M`, embedding cache, paginated hybrid fetch
-- **Sources:** Telegram `result.json`, Obsidian frontmatter/tags on `.md`
-- **Eval:** `personalragvault eval run --dataset eval.jsonl`
+- **Eval:** NDCG@k, `eval generate`, retrieval flags on `eval run`
+- **Chunking:** `semantic_embed`, `PRV_CHUNK_STRATEGY_BY_EXT`, `--chunk-strategy` on ingest
+- **Retrieval:** `--multi-query`, `--rerank`, `--parent-expand` (env defaults off)
+- **UI:** `st.chat_input`, history restore, excerpt highlight, JSON/Markdown export
+- **Community:** GitHub topics guide, demo recording instructions
 
 ## Planned
 
 | Release | Focus |
 |---------|--------|
-| **v0.4** | WhatsApp/Notion parsers, `st.chat_input` UI, query-smart filters |
-| **v0.5** | Semantic splitter improvements, browser history (opt-in) |
-| **v0.6** | Optional ONNX quantization, desktop shell (if demand) |
+| **v1.1** | WhatsApp/Notion parsers, wikilink graph for Obsidian |
+| **v1.2** | Browser history (opt-in), ONNX embed experiment |
+| **v2.0** | Desktop shell (if demand), plugin parser API |
 
 ## Out of scope
 
 - Cloud-hosted API or multi-tenant SaaS
 - Default remote embeddings or telemetry
 
-See [evaluation.md](evaluation.md), [filtering.md](filtering.md), and [sources/](sources/).
+See [evaluation.md](evaluation.md), [filtering.md](filtering.md), [community.md](community.md), and [sources/](sources/).

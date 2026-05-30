@@ -77,6 +77,11 @@ def ingest(
         "--force",
         help="Re-ingest all files even if unchanged (ignore file cache)",
     ),
+    chunk_strategy: Optional[str] = typer.Option(
+        None,
+        "--chunk-strategy",
+        help="Override PRV_CHUNK_STRATEGY for this ingest only",
+    ),
 ) -> None:
     """Ingest supported files from a directory."""
     if not _quiet:
@@ -88,6 +93,7 @@ def ingest(
             allow_outside_home=allow_outside_home,
             force=force,
             show_progress=not _quiet,
+            chunk_strategy=chunk_strategy,
         )
     except (FileNotFoundError, NotADirectoryError, ValueError) as exc:
         _stderr.print(f"[red]Error:[/red] {exc}")
@@ -119,6 +125,17 @@ def query(
     extension: Optional[str] = typer.Option(None, "--extension", help="Filter by file extension"),
     filter_json: Optional[str] = typer.Option(
         None, "--filter", help='Chroma where JSON, e.g. \'{"year": 2025}\''
+    ),
+    multi_query: bool = typer.Option(False, "--multi-query", help="Fuse multiple query variants"),
+    expand_query: bool = typer.Option(
+        False, "--expand-query", help="Use Ollama for extra query variants (with --multi-query)"
+    ),
+    rerank: bool = typer.Option(False, "--rerank", help="Cross-encoder rerank candidates"),
+    parent_expand: bool = typer.Option(
+        False, "--parent-expand", help="Expand hits with neighboring chunks"
+    ),
+    output: Optional[Path] = typer.Option(
+        None, "--output", "-o", help="Write query results as JSON"
     ),
 ) -> None:
     """Query your personal knowledge base with RAG + Ollama."""
@@ -153,6 +170,10 @@ def query(
             where=where,
             hybrid=hybrid,
             use_llm=not no_llm,
+            multi_query=multi_query,
+            expand_query=expand_query,
+            rerank=rerank,
+            parent_expand=parent_expand,
         )
     except RuntimeError as exc:
         _stderr.print(f"[red]Error:[/red] {exc}")
@@ -176,6 +197,16 @@ def query(
         table.add_row(source, score_str, preview)
     if not _quiet:
         console.print(table)
+
+    if output:
+        from src.export import export_turn_json
+
+        output.write_text(
+            export_turn_json(q, out.get("answer"), results),
+            encoding="utf-8",
+        )
+        if not _quiet:
+            console.print(f"[dim]Wrote {output}[/dim]")
 
     if no_llm:
         console.print("\n[bold]Context:[/bold]")
@@ -291,19 +322,64 @@ def eval_run(
     dataset: Path = typer.Argument(..., help="JSONL evaluation dataset"),
     top_k: int = typer.Option(5, "--top-k", "-k", min=1),
     hybrid: bool = typer.Option(False, "--hybrid"),
+    multi_query: bool = typer.Option(False, "--multi-query"),
+    expand_query: bool = typer.Option(False, "--expand-query"),
+    rerank: bool = typer.Option(False, "--rerank"),
+    parent_expand: bool = typer.Option(False, "--parent-expand"),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="Write JSON results"),
 ) -> None:
-    """Run retrieval evaluation (hit@k and MRR)."""
+    """Run retrieval evaluation (hit@k, MRR, NDCG@k)."""
     from src.eval.runner import run_evaluation
 
-    payload = run_evaluation(dataset, top_k=top_k, hybrid=hybrid, output_json=output)
+    payload = run_evaluation(
+        dataset,
+        top_k=top_k,
+        hybrid=hybrid,
+        multi_query=multi_query,
+        expand_query=expand_query,
+        rerank=rerank,
+        parent_expand=parent_expand,
+        output_json=output,
+    )
     summary = payload["summary"]
     console.print("[bold]Evaluation summary[/bold]")
     console.print(f"  Cases: {int(summary['count'])}")
     console.print(f"  Hit@{top_k}: {summary['hit_at_k']:.2%}")
     console.print(f"  MRR: {summary['mrr']:.4f}")
+    console.print(f"  NDCG@{top_k}: {summary['ndcg_at_k']:.4f}")
     if output:
         console.print(f"  Wrote {output}")
+
+
+@eval_app.command("generate")
+def eval_generate(
+    path: Optional[Path] = typer.Argument(
+        None, help="Folder to sample (if vault empty); else samples from vault"
+    ),
+    sample: int = typer.Option(10, "--sample", "-n", min=1),
+    output: Path = typer.Option(..., "--output", "-o", help="Output JSONL path"),
+    no_llm: bool = typer.Option(False, "--no-llm", help="Heuristic questions only"),
+    recursive: bool = typer.Option(False, "--recursive", "-r"),
+    allow_outside_home: bool = typer.Option(False, "--allow-outside-home"),
+) -> None:
+    """Generate synthetic eval dataset (review before trusting)."""
+    from src.eval.generate import generate_dataset, write_dataset
+
+    rows = generate_dataset(
+        path=path,
+        sample=sample,
+        use_ollama=not no_llm,
+        recursive=recursive,
+        allow_outside_home=allow_outside_home,
+        from_vault=path is None,
+    )
+    if not rows:
+        _stderr.print("[red]No chunks to sample. Ingest a folder first.[/red]")
+        raise typer.Exit(code=1)
+    write_dataset(rows, output)
+    console.print(
+        f"[yellow]Generated {len(rows)} cases — review {output} before running eval.[/yellow]"
+    )
 
 
 @app.command()

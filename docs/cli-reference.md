@@ -31,6 +31,7 @@ personalragvault ingest PATH [options]
 |--------|-------------|
 | `--recursive` / `-r` | Scan subdirectories |
 | `--allow-outside-home` | Allow paths outside `$HOME` |
+| `--chunk-strategy` | Override `PRV_CHUNK_STRATEGY` for this ingest |
 
 **Example:**
 
@@ -58,6 +59,11 @@ personalragvault query "QUESTION" [options]
 | `--source-contains` | Filter sources containing substring |
 | `--extension` | Filter by file extension |
 | `--filter` | Raw Chroma `where` JSON |
+| `--multi-query` | Fuse multiple query variants (RRF) |
+| `--expand-query` | Ollama query rewrite (with `--multi-query`) |
+| `--rerank` | Cross-encoder rerank |
+| `--parent-expand` | Expand hits with sibling chunks |
+| `--output` / `-o` | Write results JSON |
 
 **Examples:**
 
@@ -121,8 +127,12 @@ personalragvault models list
 Measure retrieval quality on a JSONL dataset (hit@k, MRR). See [evaluation.md](evaluation.md).
 
 ```bash
-personalragvault eval run ./my_eval.jsonl [--top-k 5] [--hybrid] [-o results.json]
+personalragvault eval run ./my_eval.jsonl [--top-k 5] [--hybrid] [--rerank] [-o results.json]
+personalragvault eval generate --output draft.jsonl [--sample 20]
+personalragvault eval generate ~/notes --output draft.jsonl --no-llm
 ```
+
+Metrics: Hit@k, MRR, NDCG@k.
 
 ---
 

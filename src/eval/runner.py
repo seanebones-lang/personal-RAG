@@ -16,6 +16,10 @@ def run_evaluation(
     dataset_path: Path,
     top_k: int = 5,
     hybrid: bool = False,
+    multi_query: bool = False,
+    expand_query: bool = False,
+    rerank: bool = False,
+    parent_expand: bool = False,
     output_json: Optional[Path] = None,
 ) -> Dict[str, Any]:
     cases = load_dataset(dataset_path)
@@ -32,8 +36,12 @@ def run_evaluation(
             where=where,
             hybrid=hybrid,
             use_llm=False,
+            multi_query=multi_query,
+            expand_query=expand_query,
+            rerank=rerank,
+            parent_expand=parent_expand,
         )
-        hit, rr = score_retrieval(
+        hit, rr, ndcg = score_retrieval(
             out["results"],
             case.expected_source_contains,
             top_k,
@@ -43,6 +51,7 @@ def run_evaluation(
                 question=case.question,
                 hit=hit,
                 reciprocal_rank=rr,
+                ndcg=ndcg,
                 expected=case.expected_source_contains,
             )
         )
@@ -56,6 +65,7 @@ def run_evaluation(
                 "expected": r.expected,
                 "hit": r.hit,
                 "reciprocal_rank": r.reciprocal_rank,
+                "ndcg": r.ndcg,
             }
             for r in results
         ],

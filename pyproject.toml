@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "personalragvault"
-version = "0.3.0"
+version = "1.0.0"
 description = "Local-first personal RAG vault for your files"
 readme = "README.md"
 license = { text = "MIT" }
@@ -47,6 +47,8 @@ Changelog = "https://github.com/seanebones-lang/personal-RAG/blob/main/CHANGELOG
 ui = [
     "streamlit>=1.40.0,<2",
 ]
+chunking = []
+retrieval = []
 dev = [
     "pytest>=8.3.0,<9",
     "pytest-mock>=3.14.0,<4",
