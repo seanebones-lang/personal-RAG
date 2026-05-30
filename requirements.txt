@@ -1,0 +1,8 @@
+sentence-transformers
+chromadb
+pypdf
+python-docx
+ollama
+typer
+rich
+watchdog
