@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Documentation
-    url: https://github.com/seanebones-lang/probable-fishstick/tree/main/docs
+    url: https://github.com/seanebones-lang/personal-RAG/tree/main/docs
     about: Read the docs before opening an issue
   - name: Questions / ideas
-    url: https://github.com/seanebones-lang/probable-fishstick/issues/new?template=feature_request.yml
+    url: https://github.com/seanebones-lang/personal-RAG/issues/new?template=feature_request.yml
     about: Ask or suggest via a feature request (or open a bug report if something broke)

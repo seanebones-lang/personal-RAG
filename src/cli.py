@@ -11,20 +11,22 @@ from rich.console import Console
 from rich.table import Table
 
 from src.config import get_settings
-from src.embed.embedder import embed_query, embed_texts
-from src.ingest.ingest import SUPPORTED_EXTENSIONS, validate_ingest_path
-from src.ingest.pipeline import build_documents_from_folder
-from src.ingest.watcher import run_watch
-from src.ollama_client import build_context, check_ollama_model, generate_answer
-from src.store.vectorstore import (
-    count_documents,
-    delete_by_sources,
-    purge_collection,
-    search,
-    upsert_documents,
+from src.core.vault import (
+    build_where_from_options,
+    get_status_info,
+    list_embed_presets,
+    run_ingest,
+    run_purge,
+    run_query,
 )
+from src.ingest.ingest import all_supported_extensions, validate_ingest_path
+from src.ingest.watcher import run_watch
+from src.store.vectorstore import compact_maintenance
 
 app = typer.Typer(help="PersonalRAGVault - Local personal RAG")
+models_app = typer.Typer(help="Embedding model presets")
+app.add_typer(models_app, name="models")
+
 console = Console()
 _stderr = Console(stderr=True)
 
@@ -44,44 +46,6 @@ def _setup_logging(verbose: bool, quiet: bool) -> None:
         format="%(levelname)s: %(message)s",
         force=True,
     )
-
-
-def _run_ingest(
-    path: Path,
-    recursive: bool,
-    allow_outside_home: bool,
-    show_progress: bool = True,
-) -> int:
-    try:
-        docs = build_documents_from_folder(
-            path,
-            recursive=recursive,
-            allow_outside_home=allow_outside_home,
-        )
-    except (FileNotFoundError, NotADirectoryError, ValueError) as exc:
-        _stderr.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=2) from exc
-
-    if not docs:
-        if not _quiet:
-            console.print("[yellow]No usable text found.[/yellow]")
-        return 0
-
-    sources = list({d["metadata"]["source"] for d in docs})
-    delete_by_sources(sources)
-
-    if not _quiet:
-        console.print(f"Embedding {len(docs)} chunks from {len(sources)} file(s)...")
-
-    texts = [d["text"] for d in docs]
-    embeddings = embed_texts(texts, show_progress=show_progress and not _quiet)
-    for i, doc in enumerate(docs):
-        doc["embedding"] = embeddings[i]
-
-    upsert_documents(docs)
-    if not _quiet:
-        console.print("[bold green]Ingestion complete.[/bold green]")
-    return len(docs)
 
 
 @app.callback()
@@ -106,13 +70,33 @@ def ingest(
         "--allow-outside-home",
         help="Allow ingesting paths outside home directory",
     ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help="Re-ingest all files even if unchanged (ignore file cache)",
+    ),
 ) -> None:
     """Ingest supported files from a directory."""
     if not _quiet:
         console.print(f"[bold green]Scanning[/bold green] {path}")
-    count = _run_ingest(path, recursive=recursive, allow_outside_home=allow_outside_home)
+    try:
+        count = run_ingest(
+            path,
+            recursive=recursive,
+            allow_outside_home=allow_outside_home,
+            force=force,
+            show_progress=not _quiet,
+        )
+    except (FileNotFoundError, NotADirectoryError, ValueError) as exc:
+        _stderr.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=2) from exc
+
     if count == 0:
+        if not _quiet:
+            console.print("[yellow]No usable text found.[/yellow]")
         raise typer.Exit(code=1)
+    if not _quiet:
+        console.print(f"[bold green]Ingestion complete.[/bold green] ({count} chunks)")
 
 
 @app.command()
@@ -120,10 +104,19 @@ def query(
     q: str = typer.Argument(..., help="Natural language question"),
     top_k: int = typer.Option(5, "--top-k", "-k", min=1, help="Chunks to retrieve"),
     no_llm: bool = typer.Option(False, "--no-llm", help="Retrieval only; do not call Ollama"),
+    hybrid: bool = typer.Option(False, "--hybrid", help="BM25 + vector RRF fusion"),
     max_distance: Optional[float] = typer.Option(
         None,
         "--max-distance",
         help="Skip chunks with distance above this threshold",
+    ),
+    where_year: Optional[int] = typer.Option(None, "--where-year", help="Filter by metadata year"),
+    source_contains: Optional[str] = typer.Option(
+        None, "--source-contains", help="Filter sources containing substring"
+    ),
+    extension: Optional[str] = typer.Option(None, "--extension", help="Filter by file extension"),
+    filter_json: Optional[str] = typer.Option(
+        None, "--filter", help='Chroma where JSON, e.g. \'{"year": 2025}\''
     ),
 ) -> None:
     """Query your personal knowledge base with RAG + Ollama."""
@@ -134,77 +127,108 @@ def query(
         )
         raise typer.Exit(code=2)
 
+    try:
+        where = build_where_from_options(
+            where_year=where_year,
+            source_contains=source_contains,
+            extension=extension,
+            filter_json=filter_json,
+        )
+    except ValueError as exc:
+        _stderr.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=2) from exc
+
     if _debug or not _quiet:
         console.print(f"[bold cyan]Query:[/bold cyan] {q}")
     elif not _quiet:
         console.print("[bold cyan]Running query...[/bold cyan]")
 
-    query_embedding = embed_query(q)
-    results = search(query_embedding, top_k=top_k, max_distance=max_distance)
+    try:
+        out = run_query(
+            q,
+            top_k=top_k,
+            max_distance=max_distance,
+            where=where,
+            hybrid=hybrid,
+            use_llm=not no_llm,
+        )
+    except RuntimeError as exc:
+        _stderr.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
 
+    results = out["results"]
     if not results:
         console.print("[yellow]No results found in your knowledge base.[/yellow]")
         raise typer.Exit(code=1)
 
     table = Table(title="Retrieved chunks")
     table.add_column("Source", style="dim")
-    table.add_column("Distance")
+    table.add_column("Score")
     table.add_column("Preview")
     for r in results:
         meta = r.get("metadata") or {}
-        source = str(meta.get("source", "?"))
+        source = str(meta.get("source", meta.get("file_name", "?")))
+        score = r.get("rrf_score")
+        score_str = f"{score:.4f}" if score is not None else f"{r.get('distance', 0):.4f}"
         preview = (r["text"][:80] + "...") if len(r["text"]) > 80 else r["text"]
-        table.add_row(source, f"{r['distance']:.4f}", preview)
+        table.add_row(source, score_str, preview)
     if not _quiet:
         console.print(table)
 
-    context = build_context(results, settings.max_context_chars)
-
     if no_llm:
         console.print("\n[bold]Context:[/bold]")
-        console.print(context)
+        console.print(out["context"])
         return
 
-    if not _quiet:
-        console.print(f"[dim]Generating answer with {settings.ollama_model}...[/dim]")
-
-    try:
-        check_ollama_model()
-        prompt = f"""You are a helpful assistant with access to the user's personal knowledge base.
-Use the following context to answer the question. If the answer is not in the context, say so.
-
-Context:
-{context}
-
-Question: {q}
-
-Answer:"""
-        answer = generate_answer(prompt)
+    if out["answer"]:
         console.print("\n[bold green]Answer:[/bold green]")
-        console.print(answer)
-    except Exception as exc:
-        _stderr.print(f"[yellow]Ollama error:[/yellow] {exc}")
+        console.print(out["answer"])
+    elif out["llm_error"]:
+        _stderr.print(f"[yellow]Ollama error:[/yellow] {out['llm_error']}")
         if _debug:
             console.print("\n[yellow]Raw retrieved context:[/yellow]")
             for r in results:
                 text = r["text"]
                 suffix = "..." if len(text) > 300 else ""
-                snippet = text[:300] + suffix
-                console.print(f"- {snippet}")
-        raise typer.Exit(code=1) from exc
+                console.print(f"- {text[:300]}{suffix}")
+        raise typer.Exit(code=1)
+
+
+@models_app.command("list")
+def models_list() -> None:
+    """List embedding model presets."""
+    table = Table(title="Embedding presets")
+    table.add_column("Preset")
+    table.add_column("Model ID")
+    table.add_column("Dim")
+    table.add_column("RAM")
+    table.add_column("Description")
+    for row in list_embed_presets():
+        table.add_row(
+            row["name"],
+            row["model_id"],
+            str(row["dimensions"]),
+            row["ram_note"],
+            row["description"],
+        )
+    console.print(table)
+    console.print("\nUse: export PRV_EMBED_PRESET=bge-small  (or PRV_EMBED_MODEL=...)")
 
 
 @app.command()
 def status() -> None:
     """Show vault status."""
-    settings = get_settings()
-    n = count_documents()
+    info = get_status_info()
     console.print("[bold]PersonalRAGVault status[/bold]")
-    console.print(f"  Documents (chunks): {n}")
-    console.print(f"  DB path: {settings.db_path}")
-    console.print(f"  Embed model: {settings.embed_model}")
-    console.print(f"  Ollama: {settings.ollama_host} / {settings.ollama_model}")
-    console.print(f"  Chunk size / overlap: {settings.chunk_size} / {settings.chunk_overlap}")
+    console.print(f"  Documents (chunks): {info.chunk_count}")
+    console.print(f"  DB path: {info.db_path}")
+    console.print(f"  Embed model: {info.embed_model}")
+    if info.embed_preset:
+        console.print(f"  Active preset: {info.embed_preset}")
+    console.print(f"  Embed dimension: {info.embed_dim or 'not set'}")
+    console.print(f"  Ollama: {info.ollama_host} / {info.ollama_model}")
+    console.print(f"  Chunk size / overlap: {info.chunk_size} / {info.chunk_overlap}")
+    console.print(f"  File cache: {info.use_file_cache} | FTS sidecar: {info.use_fts}")
 
 
 @app.command()
@@ -216,7 +240,7 @@ def purge(
         confirm = typer.confirm("Delete entire knowledge base?")
         if not confirm:
             raise typer.Exit()
-    purge_collection()
+    run_purge()
     console.print("[bold green]Knowledge base purged.[/bold green]")
 
 
@@ -226,14 +250,34 @@ def reindex_cmd(
     recursive: bool = typer.Option(False, "--recursive", "-r"),
     allow_outside_home: bool = typer.Option(False, "--allow-outside-home"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
+    force: bool = typer.Option(True, "--force", help="Force re-read all files"),
 ) -> None:
     """Purge the vault and re-ingest a folder."""
     if not yes:
         confirm = typer.confirm("Purge and re-ingest? This clears all stored chunks.")
         if not confirm:
             raise typer.Exit()
-    purge_collection()
-    _run_ingest(path, recursive=recursive, allow_outside_home=allow_outside_home)
+    run_purge()
+    try:
+        run_ingest(
+            path,
+            recursive=recursive,
+            allow_outside_home=allow_outside_home,
+            force=force,
+            show_progress=not _quiet,
+        )
+    except (FileNotFoundError, NotADirectoryError, ValueError) as exc:
+        _stderr.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=2) from exc
+
+
+@app.command()
+def compact() -> None:
+    """Maintain sidecar indexes (file cache orphans, FTS rebuild)."""
+    stats = compact_maintenance()
+    console.print("[bold green]Compact complete.[/bold green]")
+    for key, val in stats.items():
+        console.print(f"  {key}: {val}")
 
 
 @app.command()
@@ -251,16 +295,53 @@ def watch(
         raise typer.Exit(code=2) from exc
 
     def trigger() -> None:
-        _run_ingest(folder, recursive=recursive, allow_outside_home=allow_outside_home)
+        run_ingest(
+            folder,
+            recursive=recursive,
+            allow_outside_home=allow_outside_home,
+            show_progress=not _quiet,
+        )
 
-    _run_ingest(folder, recursive=recursive, allow_outside_home=allow_outside_home)
+    run_ingest(
+        folder,
+        recursive=recursive,
+        allow_outside_home=allow_outside_home,
+        show_progress=not _quiet,
+    )
 
     run_watch(
         folder,
         on_trigger=trigger,
         debounce_seconds=debounce,
-        supported_suffixes=SUPPORTED_EXTENSIONS,
+        supported_suffixes=all_supported_extensions(),
     )
+
+
+@app.command()
+def ui(
+    port: int = typer.Option(8501, "--port", help="Streamlit port"),
+) -> None:
+    """Launch local web UI (requires pip install personalragvault[ui])."""
+    try:
+        import streamlit.web.cli as stcli
+    except ImportError as exc:
+        _stderr.print("[red]Streamlit not installed.[/red] Run: pip install personalragvault[ui]")
+        raise typer.Exit(code=1) from exc
+
+    import sys
+    from pathlib import Path as P
+
+    app_path = P(__file__).parent / "ui" / "app.py"
+    sys.argv = [
+        "streamlit",
+        "run",
+        str(app_path),
+        "--server.address",
+        "127.0.0.1",
+        "--server.port",
+        str(port),
+    ]
+    stcli.main()
 
 
 def main_entry() -> None:

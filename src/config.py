@@ -6,6 +6,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from src.embed.presets import resolve_embed_model
+
 
 def _expand_path(value: str) -> Path:
     return Path(os.path.expanduser(value)).resolve()
@@ -24,10 +26,18 @@ def _int_env(name: str, default: int, minimum: int = 1) -> int:
     return val
 
 
+def _bool_env(name: str, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in ("1", "true", "yes", "on")
+
+
 @dataclass(frozen=True)
 class Settings:
     db_path: Path
     embed_model: str
+    embed_preset: str | None
     ollama_host: str
     ollama_model: str
     max_file_bytes: int
@@ -35,6 +45,11 @@ class Settings:
     chunk_overlap: int
     max_context_chars: int
     max_top_k: int
+    embed_batch_size: int
+    use_file_cache: bool
+    use_fts: bool
+    hybrid_fetch_limit: int
+    hybrid_rrf_k: int
     collection_name: str = "personal_knowledge"
 
     @classmethod
@@ -46,9 +61,22 @@ class Settings:
                 f"PRV_CHUNK_OVERLAP ({chunk_overlap}) must be less than "
                 f"PRV_CHUNK_SIZE ({chunk_size})"
             )
+
+        preset = os.environ.get("PRV_EMBED_PRESET")
+        explicit_model = os.environ.get("PRV_EMBED_MODEL")
+        if preset:
+            embed_model = resolve_embed_model(preset)
+        elif explicit_model:
+            embed_model = explicit_model
+        else:
+            embed_model = resolve_embed_model("mini")
+
         return cls(
-            db_path=_expand_path(os.environ.get("PRV_DB_PATH", "~/.personalragvault/chroma")),
-            embed_model=os.environ.get("PRV_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2"),
+            db_path=_expand_path(
+                os.environ.get("PRV_DB_PATH", "~/.personalragvault/chroma")
+            ),
+            embed_model=embed_model,
+            embed_preset=preset,
             ollama_host=os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434"),
             ollama_model=os.environ.get("OLLAMA_MODEL", "llama3.2"),
             max_file_bytes=_int_env("PRV_MAX_FILE_BYTES", 52_428_800, minimum=1),
@@ -56,6 +84,11 @@ class Settings:
             chunk_overlap=chunk_overlap,
             max_context_chars=_int_env("PRV_MAX_CONTEXT_CHARS", 12_000, minimum=500),
             max_top_k=_int_env("PRV_MAX_TOP_K", 50, minimum=1),
+            embed_batch_size=_int_env("PRV_EMBED_BATCH_SIZE", 32, minimum=1),
+            use_file_cache=_bool_env("PRV_USE_FILE_CACHE", True),
+            use_fts=_bool_env("PRV_USE_FTS", True),
+            hybrid_fetch_limit=_int_env("PRV_HYBRID_FETCH_LIMIT", 5000, minimum=100),
+            hybrid_rrf_k=_int_env("PRV_HYBRID_RRF_K", 60, minimum=1),
         )
 
 

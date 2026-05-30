@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import List
+from typing import List, Set
 
 from src.config import get_settings
+from src.ingest.parsers.registry import registered_extensions
 
 logger = logging.getLogger(__name__)
 
-SUPPORTED_EXTENSIONS = {
+SUPPORTED_EXTENSIONS: Set[str] = {
     ".txt",
     ".md",
     ".pdf",
@@ -26,7 +27,13 @@ SUPPORTED_EXTENSIONS = {
     ".yaml",
     ".yml",
     ".rst",
+    ".eml",
+    ".mbox",
 }
+
+
+def all_supported_extensions() -> Set[str]:
+    return SUPPORTED_EXTENSIONS | set(registered_extensions())
 
 
 def validate_ingest_path(folder: Path, allow_outside_home: bool = False) -> Path:
@@ -42,21 +49,23 @@ def validate_ingest_path(folder: Path, allow_outside_home: bool = False) -> Path
             resolved.relative_to(home)
         except ValueError:
             raise ValueError(
-                f"Path {resolved} is outside home directory. Use --allow-outside-home to override."
+                f"Path {resolved} is outside home directory. "
+                "Use --allow-outside-home to override."
             )
     return resolved
 
 
 def discover_files(folder: Path, recursive: bool = False) -> List[Path]:
     """Find supported files in a folder."""
+    extensions = all_supported_extensions()
     files: List[Path] = []
     if recursive:
         for f in folder.rglob("*"):
-            if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS:
+            if f.is_file() and f.suffix.lower() in extensions:
                 files.append(f)
     else:
         for f in folder.iterdir():
-            if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS:
+            if f.is_file() and f.suffix.lower() in extensions:
                 files.append(f)
     return sorted(files)
 
@@ -76,7 +85,7 @@ def _check_file_size(file_path: Path) -> bool:
 
 
 def extract_text(file_path: Path) -> str:
-    """Extract text from supported file types."""
+    """Extract text from built-in file types (PDF, DOCX, plain)."""
     if not _check_file_size(file_path):
         return ""
 
@@ -85,6 +94,8 @@ def extract_text(file_path: Path) -> str:
         return _extract_pdf(file_path)
     if suffix == ".docx":
         return _extract_docx(file_path)
+    if suffix in {".eml", ".mbox"}:
+        return ""
     return _extract_plain(file_path)
 
 

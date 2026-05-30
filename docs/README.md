@@ -11,6 +11,8 @@ Welcome. This folder is the full guide for installing, using, developing, and co
 | [Configuration](configuration.md) | Environment variables and tuning |
 | [Architecture](architecture.md) | How ingest, embed, store, and query fit together |
 | [FAQ](faq.md) | Common problems and answers |
+| [Filtering](filtering.md) | Metadata filters on query |
+| [Roadmap](roadmap.md) | Planned improvements |
 | [Development](development.md) | Local dev setup, tests, CI |
 | [Contributing](../CONTRIBUTING.md) | How to send issues and pull requests |
 

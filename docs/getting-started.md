@@ -14,8 +14,8 @@ PersonalRAGVault is a **local-only** CLI: your files stay on your machine, embed
 ## 1. Clone the repository
 
 ```bash
-git clone https://github.com/seanebones-lang/probable-fishstick.git
-cd probable-fishstick
+git clone https://github.com/seanebones-lang/personal-RAG.git
+cd personal-RAG
 ```
 
 Use your fork URL if you cloned a fork.

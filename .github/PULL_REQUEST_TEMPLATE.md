@@ -15,7 +15,7 @@
 <!-- Commands a reviewer can run -->
 
 ```bash
-cd probable-fishstick
+cd personal-RAG
 source .venv/bin/activate
 pytest -m "not integration" -v
 # optional: personalragvault ...

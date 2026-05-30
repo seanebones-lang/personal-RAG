@@ -4,7 +4,7 @@ Thank you for helping make PersonalRAGVault better. This project is open source 
 
 ## Ways to contribute
 
-- Report bugs or request features via [GitHub Issues](https://github.com/seanebones-lang/probable-fishstick/issues)
+- Report bugs or request features via [GitHub Issues](https://github.com/seanebones-lang/personal-RAG/issues)
 - Improve documentation in `docs/` or `README.md`
 - Fix bugs or add features with pull requests
 - Share usage feedback and examples
@@ -18,8 +18,8 @@ Thank you for helping make PersonalRAGVault better. This project is open source 
 ## Development setup
 
 ```bash
-git clone https://github.com/seanebones-lang/probable-fishstick.git
-cd probable-fishstick
+git clone https://github.com/seanebones-lang/personal-RAG.git
+cd personal-RAG
 ./scripts/setup.sh
 source .venv/bin/activate
 pip install -e ".[dev]"
@@ -63,4 +63,4 @@ Be respectful and constructive. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 ## Questions
 
-Open a [GitHub Discussion](https://github.com/seanebones-lang/probable-fishstick/discussions) or an issue labeled `question` if discussions are enabled; otherwise use Issues.
+Open a [GitHub Discussion](https://github.com/seanebones-lang/personal-RAG/discussions) or an issue labeled `question` if discussions are enabled; otherwise use Issues.

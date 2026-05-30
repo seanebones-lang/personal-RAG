@@ -5,8 +5,8 @@ For contributors and anyone building from source.
 ## Setup
 
 ```bash
-git clone https://github.com/seanebones-lang/probable-fishstick.git
-cd probable-fishstick
+git clone https://github.com/seanebones-lang/personal-RAG.git
+cd personal-RAG
 ./scripts/setup.sh
 source .venv/bin/activate
 pip install -e ".[dev]"
@@ -15,7 +15,7 @@ pip install -e ".[dev]"
 ## Project structure
 
 ```
-probable-fishstick/
+personal-RAG/
 ├── src/
 │   ├── cli.py              # Typer entry
 │   ├── config.py           # Settings

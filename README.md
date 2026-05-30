@@ -1,6 +1,6 @@
 # PersonalRAGVault
 
-[![CI](https://github.com/seanebones-lang/probable-fishstick/actions/workflows/ci.yml/badge.svg)](https://github.com/seanebones-lang/probable-fishstick/actions/workflows/ci.yml)
+[![CI](https://github.com/seanebones-lang/personal-RAG/actions/workflows/ci.yml/badge.svg)](https://github.com/seanebones-lang/personal-RAG/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
@@ -31,8 +31,8 @@ No cloud. No account. Your data stays on your disk.
 **Run all commands from the project directory** (where `pyproject.toml` lives).
 
 ```bash
-git clone https://github.com/seanebones-lang/probable-fishstick.git
-cd probable-fishstick
+git clone https://github.com/seanebones-lang/personal-RAG.git
+cd personal-RAG
 
 ./scripts/setup.sh --dev    # or: python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
 
@@ -43,6 +43,15 @@ personalragvault query "find my notes about RAG systems"
 ```
 
 See **[docs/getting-started.md](docs/getting-started.md)** for the full walkthrough.
+
+## New in v0.2
+
+- `personalragvault models list` — embedding presets (mini, bge-small, bge-base)
+- `--hybrid` query — BM25 + vector fusion
+- `--where-year`, `--source-contains`, `--extension` — metadata filters
+- `.eml` / `.mbox` ingest — email archives
+- `personalragvault compact` — maintain sidecar indexes
+- `personalragvault ui` — optional local Streamlit UI (`pip install -e ".[ui]"`)
 
 ## Documentation
 
@@ -101,8 +110,8 @@ Details: [docs/development.md](docs/development.md)
 
 Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
-- [Report a bug](https://github.com/seanebones-lang/probable-fishstick/issues/new?template=bug_report.yml)
-- [Request a feature](https://github.com/seanebones-lang/probable-fishstick/issues/new?template=feature_request.yml)
+- [Report a bug](https://github.com/seanebones-lang/personal-RAG/issues/new?template=bug_report.yml)
+- [Request a feature](https://github.com/seanebones-lang/personal-RAG/issues/new?template=feature_request.yml)
 
 ## Security
 

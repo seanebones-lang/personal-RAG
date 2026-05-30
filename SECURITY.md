@@ -14,7 +14,7 @@ If you discover a security issue (e.g. path handling, dependency vulnerability, 
 
 1. **Do not** open a public issue for undisclosed vulnerabilities
 2. Email or message the repository owner via GitHub (private security advisory preferred):
-   - Repo: https://github.com/seanebones-lang/probable-fishstick
+   - Repo: https://github.com/seanebones-lang/personal-RAG
    - Use **Report a vulnerability** under Security → Advisories if available
 3. Include steps to reproduce, impact, and suggested fix if you have one
 

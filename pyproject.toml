@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "personalragvault"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local-first personal RAG vault for your files"
 readme = "README.md"
 license = { text = "MIT" }
@@ -23,12 +23,6 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Text Processing :: Indexing",
 ]
-[project.urls]
-Homepage = "https://github.com/seanebones-lang/probable-fishstick"
-Documentation = "https://github.com/seanebones-lang/probable-fishstick/tree/main/docs"
-Repository = "https://github.com/seanebones-lang/probable-fishstick"
-Issues = "https://github.com/seanebones-lang/probable-fishstick/issues"
-Changelog = "https://github.com/seanebones-lang/probable-fishstick/blob/main/CHANGELOG.md"
 dependencies = [
     "sentence-transformers>=3.0.1,<4",
     "chromadb>=0.5.23,<1",
@@ -39,9 +33,20 @@ dependencies = [
     "rich>=13.9.4,<14",
     "watchdog>=4.0.0,<7",
     "numpy>=1.26.0,<3",
+    "rank-bm25>=0.2.2,<1",
 ]
 
+[project.urls]
+Homepage = "https://github.com/seanebones-lang/personal-RAG"
+Documentation = "https://github.com/seanebones-lang/personal-RAG/tree/main/docs"
+Repository = "https://github.com/seanebones-lang/personal-RAG"
+Issues = "https://github.com/seanebones-lang/personal-RAG/issues"
+Changelog = "https://github.com/seanebones-lang/personal-RAG/blob/main/CHANGELOG.md"
+
 [project.optional-dependencies]
+ui = [
+    "streamlit>=1.40.0,<2",
+]
 dev = [
     "pytest>=8.3.0,<9",
     "pytest-mock>=3.14.0,<4",
