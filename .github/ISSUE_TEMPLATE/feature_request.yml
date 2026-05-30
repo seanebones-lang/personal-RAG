@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest an idea for PersonalRAGVault
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the problem and proposed solution. For large features, consider opening a discussion first.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What are you trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Area
+      options:
+        - CLI / UX
+        - Ingest / file types
+        - Embeddings / retrieval
+        - Ollama / generation
+        - Documentation
+        - Other
