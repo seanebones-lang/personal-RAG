@@ -92,8 +92,14 @@ with tab_query:
     rerank = st.checkbox("Cross-encoder rerank")
     parent_expand = st.checkbox("Parent document expand")
     with st.expander("Filters"):
-        where_year = st.number_input("Year", min_value=1990, max_value=2100, value=0, step=1)
-        where_year_val = int(where_year) if where_year > 0 else None
+        where_year = st.number_input(
+            "Year (0 = any)",
+            min_value=0,
+            max_value=2100,
+            value=0,
+            step=1,
+        )
+        where_year_val = int(where_year) if where_year >= 1990 else None
         source_contains = st.text_input("Source contains")
         extension = st.text_input("Extension (e.g. .pdf)")
 

@@ -44,3 +44,4 @@ htmlcov/
 
 # Local data (do not commit personal vault)
 .personalragvault/
+.demo-vault/

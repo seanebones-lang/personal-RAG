@@ -1,0 +1,5 @@
+PersonalRAGVault screenshot demo tasks:
+- Run ingest on this folder
+- Open UI at http://127.0.0.1:8501
+- Query: "What was the January invoice total?"
+- Show result cards and document preview

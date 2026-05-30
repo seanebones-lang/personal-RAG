@@ -46,6 +46,31 @@ personalragvault query "find my notes about RAG systems"
 
 See **[docs/getting-started.md](docs/getting-started.md)** for the full walkthrough.
 
+### Local web UI
+
+```bash
+pip install -e ".[ui]"
+personalragvault ui
+```
+
+Open **http://127.0.0.1:8501** (localhost only).
+
+## Screenshots
+
+Streamlit UI (`personalragvault ui`) — Status, Ingest, Query, Models, and Maintenance tabs.
+
+| Status | Ingest |
+|--------|--------|
+| ![Status tab](docs/assets/screenshots/ui-status.png) | ![Ingest tab](docs/assets/screenshots/ui-ingest.png) |
+
+| Query | Models |
+|-------|--------|
+| ![Query tab](docs/assets/screenshots/ui-query.png) | ![Models tab](docs/assets/screenshots/ui-models.png) |
+
+| Maintenance |
+|-------------|
+| ![Maintenance tab](docs/assets/screenshots/ui-maintenance.png) |
+
 ## New in v1.0
 
 - `personalragvault eval run` — Hit@k, MRR, and **NDCG@k**; `eval generate` for draft datasets
@@ -53,7 +78,7 @@ See **[docs/getting-started.md](docs/getting-started.md)** for the full walkthro
 - **Chunking:** `semantic_embed`, per-extension overrides, `--chunk-strategy` on ingest
 - **UI:** chat layout, source highlighting, export JSON/Markdown, richer history
 
-See [docs/assets/DEMO.md](docs/assets/DEMO.md) to add a README demo GIF.
+Screenshots live in [docs/assets/screenshots/](docs/assets/screenshots/). See [docs/assets/DEMO.md](docs/assets/DEMO.md) to record a demo GIF.
 
 ## New in v0.3
 

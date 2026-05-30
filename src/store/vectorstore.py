@@ -55,9 +55,11 @@ def get_collection(name: Optional[str] = None):
         coll = client.get_collection(coll_name)
         meta = dict(coll.metadata or {})
         if not meta.get(HNSW_CONFIGURED_KEY):
-            meta.update(_hnsw_metadata())
-            meta[HNSW_CONFIGURED_KEY] = True
-            coll.modify(metadata=meta)
+            # HNSW params are set only at collection creation; do not resend hnsw:space.
+            try:
+                coll.modify(metadata={HNSW_CONFIGURED_KEY: True})
+            except ValueError:
+                pass
         return coll
     except Exception:
         meta = _hnsw_metadata()
@@ -75,8 +77,12 @@ def get_collection_embed_dim() -> Optional[int]:
 def set_collection_embed_dim(dim: int) -> None:
     coll = get_collection()
     meta = dict(coll.metadata or {})
+    if meta.get(EMBED_DIM_KEY) == dim:
+        return
     meta[EMBED_DIM_KEY] = dim
-    coll.modify(metadata=meta)
+    # Preserve non-HNSW metadata; Chroma rejects changing hnsw:space after create.
+    safe = {k: v for k, v in meta.items() if not str(k).startswith("hnsw:")}
+    coll.modify(metadata=safe)
 
 
 def count_documents() -> int:
