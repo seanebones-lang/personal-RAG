@@ -1,4 +1,4 @@
-"""Split documents into overlapping chunks for embedding."""
+"""Character-based overlapping chunks."""
 
 from __future__ import annotations
 

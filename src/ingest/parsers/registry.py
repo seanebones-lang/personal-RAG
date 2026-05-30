@@ -9,6 +9,8 @@ from typing import Dict, List, Type
 from src.ingest.parsers.base import BaseParser, ExtractedDocument
 from src.ingest.parsers.eml import EmlParser
 from src.ingest.parsers.mbox import MboxParser
+from src.ingest.parsers.obsidian import ObsidianMarkdownParser
+from src.ingest.parsers.telegram import TelegramParser
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,8 @@ def _init_registry() -> None:
         return
     _register(EmlParser)
     _register(MboxParser)
+    _register(TelegramParser)
+    _register(ObsidianMarkdownParser)
 
 
 def extract_documents(file_path: Path, fallback_text: str) -> List[ExtractedDocument]:
@@ -40,6 +44,8 @@ def extract_documents(file_path: Path, fallback_text: str) -> List[ExtractedDocu
                 return docs
         except Exception as exc:
             logger.warning("Parser failed for %s: %s", file_path, exc)
+    if ext == ".json" and file_path.name == "result.json":
+        return []
     if fallback_text.strip():
         return [ExtractedDocument(text=fallback_text, extra_metadata={"format": ext or "plain"})]
     return []

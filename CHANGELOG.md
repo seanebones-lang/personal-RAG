@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-30
+
+### Added
+
+- Streamlit UI components: result cards, conversation history, document preview
+- `personalragvault eval run` with Hit@k and MRR ([docs/evaluation.md](docs/evaluation.md))
+- Chunk strategies: `PRV_CHUNK_STRATEGY=char|recursive|semantic` with markdown/code rules
+- Chroma HNSW tuning via `PRV_HNSW_SEARCH_EF` and `PRV_HNSW_M`
+- Embedding cache (`PRV_USE_EMBEDDING_CACHE`) and paginated hybrid corpus fetch
+- Telegram export parser (`result.json`) and Obsidian frontmatter/tags
+- Source guides in [docs/sources/](docs/sources/)
+
 ## [0.2.0] - 2026-05-30
 
 ### Added

@@ -52,7 +52,12 @@ personalragvault query "QUESTION" [options]
 |--------|-------------|
 | `--top-k` / `-k` | Number of chunks to retrieve (default: 5, max: `PRV_MAX_TOP_K`) |
 | `--no-llm` | Print retrieved context only |
+| `--hybrid` | BM25 + vector RRF fusion |
 | `--max-distance` | Drop chunks with distance above threshold |
+| `--where-year` | Filter by metadata year |
+| `--source-contains` | Filter sources containing substring |
+| `--extension` | Filter by file extension |
+| `--filter` | Raw Chroma `where` JSON |
 
 **Examples:**
 
@@ -83,10 +88,50 @@ Runs until `Ctrl+C`. Performs an initial ingest on start.
 
 ## `status`
 
-Print chunk count, database path, embedding model, and Ollama settings.
+Print chunk count, database path, embedding model, chunk strategy, HNSW settings, and cache flags.
 
 ```bash
 personalragvault status
+```
+
+---
+
+## `compact`
+
+Maintain sidecar indexes (orphan file-cache rows, FTS rebuild).
+
+```bash
+personalragvault compact
+```
+
+---
+
+## `models list`
+
+List embedding presets (`PRV_EMBED_PRESET`).
+
+```bash
+personalragvault models list
+```
+
+---
+
+## `eval run`
+
+Measure retrieval quality on a JSONL dataset (hit@k, MRR). See [evaluation.md](evaluation.md).
+
+```bash
+personalragvault eval run ./my_eval.jsonl [--top-k 5] [--hybrid] [-o results.json]
+```
+
+---
+
+## `ui`
+
+Launch the local Streamlit app (`personalragvault[ui]`).
+
+```bash
+personalragvault ui [--port 8501]
 ```
 
 ---
@@ -117,7 +162,9 @@ personalragvault reindex PATH [--recursive] [--allow-outside-home] [--yes]
 
 Defined in `src/ingest/ingest.py`:
 
-`.txt`, `.md`, `.pdf`, `.json`, `.docx`, `.py`, `.js`, `.ts`, `.html`, `.htm`, `.csv`, `.xml`, `.yaml`, `.yml`, `.rst`
+`.txt`, `.md`, `.pdf`, `.json`, `.docx`, `.py`, `.js`, `.ts`, `.html`, `.htm`, `.csv`, `.xml`, `.yaml`, `.yml`, `.rst`, `.eml`, `.mbox`
+
+Telegram exports (`result.json`) and Obsidian `.md` notes use dedicated parsers — see [sources/](sources/).
 
 ---
 

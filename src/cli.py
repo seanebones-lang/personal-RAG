@@ -15,17 +15,19 @@ from src.core.vault import (
     build_where_from_options,
     get_status_info,
     list_embed_presets,
+    run_compact,
     run_ingest,
     run_purge,
     run_query,
 )
 from src.ingest.ingest import all_supported_extensions, validate_ingest_path
 from src.ingest.watcher import run_watch
-from src.store.vectorstore import compact_maintenance
 
 app = typer.Typer(help="PersonalRAGVault - Local personal RAG")
 models_app = typer.Typer(help="Embedding model presets")
+eval_app = typer.Typer(help="Retrieval evaluation")
 app.add_typer(models_app, name="models")
+app.add_typer(eval_app, name="eval")
 
 console = Console()
 _stderr = Console(stderr=True)
@@ -227,8 +229,21 @@ def status() -> None:
         console.print(f"  Active preset: {info.embed_preset}")
     console.print(f"  Embed dimension: {info.embed_dim or 'not set'}")
     console.print(f"  Ollama: {info.ollama_host} / {info.ollama_model}")
+    console.print(f"  Chunk strategy: {info.chunk_strategy}")
     console.print(f"  Chunk size / overlap: {info.chunk_size} / {info.chunk_overlap}")
-    console.print(f"  File cache: {info.use_file_cache} | FTS sidecar: {info.use_fts}")
+    console.print(f"  HNSW search_ef: {info.hnsw_search_ef}")
+    console.print(
+        f"  Caches: file={info.use_file_cache} fts={info.use_fts} "
+        f"embed={info.use_embedding_cache}"
+    )
+    if info.chunk_count > 5000:
+        console.print(
+            "[yellow]  Tip: large vault — try --hybrid and "
+            "`personalragvault compact`[/yellow]"
+        )
+    for key, val in info.sidecar_stats.items():
+        if key.endswith("_bytes"):
+            console.print(f"  {key}: {val}")
 
 
 @app.command()
@@ -271,10 +286,30 @@ def reindex_cmd(
         raise typer.Exit(code=2) from exc
 
 
+@eval_app.command("run")
+def eval_run(
+    dataset: Path = typer.Argument(..., help="JSONL evaluation dataset"),
+    top_k: int = typer.Option(5, "--top-k", "-k", min=1),
+    hybrid: bool = typer.Option(False, "--hybrid"),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Write JSON results"),
+) -> None:
+    """Run retrieval evaluation (hit@k and MRR)."""
+    from src.eval.runner import run_evaluation
+
+    payload = run_evaluation(dataset, top_k=top_k, hybrid=hybrid, output_json=output)
+    summary = payload["summary"]
+    console.print("[bold]Evaluation summary[/bold]")
+    console.print(f"  Cases: {int(summary['count'])}")
+    console.print(f"  Hit@{top_k}: {summary['hit_at_k']:.2%}")
+    console.print(f"  MRR: {summary['mrr']:.4f}")
+    if output:
+        console.print(f"  Wrote {output}")
+
+
 @app.command()
 def compact() -> None:
     """Maintain sidecar indexes (file cache orphans, FTS rebuild)."""
-    stats = compact_maintenance()
+    stats = run_compact()
     console.print("[bold green]Compact complete.[/bold green]")
     for key, val in stats.items():
         console.print(f"  {key}: {val}")

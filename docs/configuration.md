@@ -11,10 +11,16 @@ PersonalRAGVault reads settings from **environment variables**. Copy [`.env.exam
 | `OLLAMA_HOST` | `http://127.0.0.1:11434` | Ollama API base URL |
 | `OLLAMA_MODEL` | `llama3.2` | Model name for `ollama chat` |
 | `PRV_MAX_FILE_BYTES` | `52428800` (50 MiB) | Skip files larger than this |
-| `PRV_CHUNK_SIZE` | `800` | Characters per chunk (min 100) |
+| `PRV_CHUNK_STRATEGY` | `char` | `char`, `recursive`, or `semantic` |
+| `PRV_CHUNK_SIZE` | `800` | Characters per chunk (min 100); used by `char` strategy |
 | `PRV_CHUNK_OVERLAP` | `120` | Overlap between chunks (must be &lt; chunk size) |
+| `PRV_CHUNK_MIN_SIZE` | `200` | Min size for `recursive` / `semantic` |
+| `PRV_CHUNK_MAX_SIZE` | `800` | Max size for `recursive` / `semantic` |
 | `PRV_MAX_CONTEXT_CHARS` | `12000` | Max retrieved text sent to Ollama |
 | `PRV_MAX_TOP_K` | `50` | Upper bound for CLI `--top-k` |
+| `PRV_HNSW_SEARCH_EF` | `100` | Chroma HNSW search breadth (higher = slower, more accurate) |
+| `PRV_HNSW_M` | `16` | Chroma HNSW graph degree |
+| `PRV_USE_EMBEDDING_CACHE` | `true` | Cache embeddings by chunk content hash |
 
 ## Examples
 

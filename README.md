@@ -44,6 +44,14 @@ personalragvault query "find my notes about RAG systems"
 
 See **[docs/getting-started.md](docs/getting-started.md)** for the full walkthrough.
 
+## New in v0.3
+
+- `PRV_CHUNK_STRATEGY` — `char`, `recursive`, or `semantic` chunking
+- `personalragvault eval run` — Hit@k and MRR on a JSONL dataset
+- Telegram `result.json` and Obsidian frontmatter/tag metadata
+- UI: result cards, history sidebar, document preview, compact tab
+- `PRV_HNSW_SEARCH_EF` / `PRV_USE_EMBEDDING_CACHE` for larger vaults
+
 ## New in v0.2
 
 - `personalragvault models list` — embedding presets (mini, bge-small, bge-base)

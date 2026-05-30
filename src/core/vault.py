@@ -19,10 +19,12 @@ from src.ingest.pipeline import build_documents_from_folder
 from src.ollama_client import build_context, check_ollama_model, generate_answer
 from src.retrieval.hybrid import hybrid_search
 from src.store.vectorstore import (
+    compact_maintenance,
     count_documents,
     delete_by_sources,
     fetch_corpus,
     get_collection_embed_dim,
+    get_sidecar_stats,
     purge_collection,
     search,
     set_collection_embed_dim,
@@ -43,6 +45,10 @@ class StatusInfo:
     chunk_overlap: int
     use_file_cache: bool
     use_fts: bool
+    use_embedding_cache: bool
+    chunk_strategy: str
+    hnsw_search_ef: int
+    sidecar_stats: Dict[str, int]
 
 
 def get_status_info() -> StatusInfo:
@@ -61,6 +67,10 @@ def get_status_info() -> StatusInfo:
         chunk_overlap=settings.chunk_overlap,
         use_file_cache=settings.use_file_cache,
         use_fts=settings.use_fts,
+        use_embedding_cache=settings.use_embedding_cache,
+        chunk_strategy=settings.chunk_strategy,
+        hnsw_search_ef=settings.hnsw_search_ef,
+        sidecar_stats=get_sidecar_stats(),
     )
 
 
@@ -84,10 +94,7 @@ def run_ingest(
     sources = list({str(d["metadata"]["source"]) for d in docs})
     delete_by_sources(sources)
 
-    texts = [d["text"] for d in docs]
-    embeddings = embed_texts(texts, show_progress=show_progress)
-    for i, doc in enumerate(docs):
-        doc["embedding"] = embeddings[i]
+    _attach_embeddings(docs, show_progress=show_progress)
 
     upsert_documents(docs)
     set_collection_embed_dim(get_embedding_dimension())
@@ -150,8 +157,64 @@ def run_query(
     }
 
 
+def _attach_embeddings(docs: List[Dict[str, Any]], show_progress: bool = True) -> None:
+    from src.store.embedding_cache import get_cached, store_cached, text_hash
+
+    embeddings: List[Any] = [None] * len(docs)
+    pending_texts: List[str] = []
+    pending_indices: List[int] = []
+
+    for i, doc in enumerate(docs):
+        th = text_hash(doc["text"])
+        cached = get_cached(doc["id"], th)
+        if cached is not None:
+            embeddings[i] = cached
+        else:
+            pending_texts.append(doc["text"])
+            pending_indices.append(i)
+
+    if pending_texts:
+        encoded = embed_texts(pending_texts, show_progress=show_progress)
+        for j, idx in enumerate(pending_indices):
+            embeddings[idx] = encoded[j]
+            doc = docs[idx]
+            store_cached(doc["id"], text_hash(doc["text"]), encoded[j])
+
+    for i, doc in enumerate(docs):
+        doc["embedding"] = embeddings[i]
+
+
 def run_purge() -> None:
     purge_collection()
+
+
+def run_compact() -> Dict[str, int]:
+    return compact_maintenance()
+
+
+def preview_source(source_path: str, max_chars: int = 4000) -> str:
+    """Read a safe preview of an ingested source file."""
+    path = Path(source_path).expanduser().resolve()
+    if not path.exists() or not path.is_file():
+        return f"File not found: {path}"
+
+    suffix = path.suffix.lower()
+    if suffix == ".pdf":
+        try:
+            from pypdf import PdfReader
+
+            reader = PdfReader(str(path))
+            if not reader.pages:
+                return "(empty PDF)"
+            text = reader.pages[0].extract_text() or ""
+            return text[:max_chars] + ("..." if len(text) > max_chars else "")
+        except Exception as exc:
+            return f"Could not read PDF: {exc}"
+    try:
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        return text[:max_chars] + ("..." if len(text) > max_chars else "")
+    except Exception as exc:
+        return f"Could not read file: {exc}"
 
 
 def build_where_from_options(

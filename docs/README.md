@@ -13,6 +13,9 @@ Welcome. This folder is the full guide for installing, using, developing, and co
 | [FAQ](faq.md) | Common problems and answers |
 | [Filtering](filtering.md) | Metadata filters on query |
 | [Roadmap](roadmap.md) | Planned improvements |
+| [Evaluation](evaluation.md) | Hit@k / MRR retrieval benchmarks |
+| [Telegram source](sources/telegram.md) | Telegram export ingest |
+| [Obsidian source](sources/obsidian.md) | Obsidian vault ingest |
 | [Development](development.md) | Local dev setup, tests, CI |
 | [Contributing](../CONTRIBUTING.md) | How to send issues and pull requests |
 

@@ -16,6 +16,16 @@ logger = logging.getLogger(__name__)
 
 _client: Any = None
 EMBED_DIM_KEY = "embed_dim"
+HNSW_CONFIGURED_KEY = "hnsw_configured"
+
+
+def _hnsw_metadata() -> Dict[str, Any]:
+    settings = get_settings()
+    return {
+        "hnsw:space": "cosine",
+        "hnsw:search_ef": settings.hnsw_search_ef,
+        "hnsw:M": settings.hnsw_m,
+    }
 
 
 def get_client() -> Any:
@@ -40,7 +50,19 @@ def reset_client() -> None:
 def get_collection(name: Optional[str] = None):
     settings = get_settings()
     client = get_client()
-    return client.get_or_create_collection(name=name or settings.collection_name)
+    coll_name = name or settings.collection_name
+    try:
+        coll = client.get_collection(coll_name)
+        meta = dict(coll.metadata or {})
+        if not meta.get(HNSW_CONFIGURED_KEY):
+            meta.update(_hnsw_metadata())
+            meta[HNSW_CONFIGURED_KEY] = True
+            coll.modify(metadata=meta)
+        return coll
+    except Exception:
+        meta = _hnsw_metadata()
+        meta[HNSW_CONFIGURED_KEY] = True
+        return client.create_collection(name=coll_name, metadata=meta)
 
 
 def get_collection_embed_dim() -> Optional[int]:
@@ -106,6 +128,7 @@ def delete_by_sources(sources: List[str]) -> int:
 
 
 def purge_collection() -> None:
+    from src.store.embedding_cache import reset_cache as reset_embed_cache
     from src.store.file_cache import reset_cache
     from src.store.fts import purge_fts
 
@@ -115,42 +138,70 @@ def purge_collection() -> None:
         client.delete_collection(settings.collection_name)
     except Exception:
         pass
-    client.get_or_create_collection(name=settings.collection_name)
+    meta = _hnsw_metadata()
+    meta[HNSW_CONFIGURED_KEY] = True
+    client.create_collection(name=settings.collection_name, metadata=meta)
     purge_fts()
     reset_cache()
+    reset_embed_cache()
     logger.info("Purged collection %s", settings.collection_name)
 
 
 def fetch_corpus(
     where: Optional[Dict[str, Any]] = None,
-    limit: int = 5000,
+    limit: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
+    """Fetch documents for BM25; paginate when collection exceeds limit."""
+    settings = get_settings()
     collection = get_collection()
     total = collection.count()
     if total == 0:
         return []
-    n = min(limit, total)
-    kwargs: Dict[str, Any] = {"include": ["documents", "metadatas"]}
-    if where:
-        kwargs["where"] = where
-    try:
-        result = collection.get(limit=n, **kwargs)
-    except Exception as exc:
-        logger.warning("fetch_corpus failed: %s", exc)
-        return []
 
+    max_fetch = limit if limit is not None else settings.hybrid_fetch_limit
+    batch_size = 1000
     out: List[Dict[str, Any]] = []
-    ids = result.get("ids") or []
-    docs = result.get("documents") or []
-    metas = result.get("metadatas") or []
-    for i, doc_id in enumerate(ids):
-        out.append(
-            {
-                "id": doc_id,
-                "text": docs[i] if i < len(docs) else "",
-                "metadata": metas[i] if i < len(metas) else {},
-            }
-        )
+    offset = 0
+
+    while offset < total and len(out) < max_fetch:
+        n = min(batch_size, max_fetch - len(out), total - offset)
+        kwargs: Dict[str, Any] = {
+            "include": ["documents", "metadatas"],
+            "limit": n,
+            "offset": offset,
+        }
+        if where:
+            kwargs["where"] = where
+        try:
+            result = collection.get(**kwargs)
+        except TypeError:
+            result = collection.get(
+                include=["documents", "metadatas"],
+                limit=min(max_fetch, total),
+                **({"where": where} if where else {}),
+            )
+            offset = total
+        except Exception as exc:
+            logger.warning("fetch_corpus batch failed at offset %s: %s", offset, exc)
+            break
+
+        ids = result.get("ids") or []
+        docs = result.get("documents") or []
+        metas = result.get("metadatas") or []
+        if not ids:
+            break
+        for i, doc_id in enumerate(ids):
+            out.append(
+                {
+                    "id": doc_id,
+                    "text": docs[i] if i < len(docs) else "",
+                    "metadata": metas[i] if i < len(metas) else {},
+                }
+            )
+        offset += len(ids)
+        if len(ids) < n:
+            break
+
     return out
 
 
@@ -195,6 +246,18 @@ def search(
             }
         )
     return out
+
+
+def get_sidecar_stats() -> Dict[str, int]:
+    settings = get_settings()
+    stats: Dict[str, int] = {"chunks": count_documents()}
+    for name, path in (
+        ("file_cache_bytes", settings.db_path.parent / "file_cache.db"),
+        ("fts_bytes", settings.db_path.parent / "fts.db"),
+        ("embedding_cache_bytes", settings.db_path.parent / "embedding_cache.db"),
+    ):
+        stats[name] = path.stat().st_size if path.exists() else 0
+    return stats
 
 
 def compact_maintenance() -> Dict[str, int]:

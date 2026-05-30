@@ -7,8 +7,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List
 
-from src.config import get_settings
-from src.ingest.chunking import chunk_text
+from src.ingest.chunking import TextChunk, chunk_document
 from src.ingest.ingest import discover_files, extract_text, validate_ingest_path
 from src.ingest.metadata import build_chunk_metadata
 from src.ingest.parsers.registry import extract_documents
@@ -31,7 +30,6 @@ def build_documents_from_folder(
     """Discover files, extract text, chunk, and return doc dicts (no embeddings)."""
     validated = validate_ingest_path(folder, allow_outside_home=allow_outside_home)
     ingest_root = validated.resolve()
-    settings = get_settings()
     files = discover_files(validated, recursive=recursive)
     docs: List[Dict[str, Any]] = []
 
@@ -54,16 +52,17 @@ def build_documents_from_folder(
             if len(extracted_list) > 1:
                 source = f"{source}#doc{doc_idx}"
 
-            chunks = chunk_text(text, settings.chunk_size, settings.chunk_overlap)
-            total = len(chunks)
-            extra = dict(extracted.extra_metadata)
-            extra["doc_index"] = doc_idx
+            text_chunks: List[TextChunk] = chunk_document(text, file_path)
+            total = len(text_chunks)
 
-            for idx, chunk in enumerate(chunks):
+            for idx, tchunk in enumerate(text_chunks):
+                extra = dict(extracted.extra_metadata)
+                extra["doc_index"] = doc_idx
+                extra.update(tchunk.extra)
                 docs.append(
                     {
-                        "id": make_chunk_id(source, idx, chunk),
-                        "text": chunk,
+                        "id": make_chunk_id(source, idx, tchunk.text),
+                        "text": tchunk.text,
                         "metadata": build_chunk_metadata(
                             file_path,
                             ingest_root,

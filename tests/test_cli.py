@@ -13,7 +13,8 @@ def test_status_command():
     assert "PersonalRAGVault status" in result.stdout
 
 
-def test_ingest_no_files(tmp_path):
+@patch("src.cli.run_ingest", return_value=0)
+def test_ingest_no_files(_mock_ingest, tmp_path):
     result = runner.invoke(app, ["ingest", str(tmp_path), "--allow-outside-home"])
     assert result.exit_code == 1
 

@@ -18,6 +18,7 @@ def isolated_settings(monkeypatch: pytest.MonkeyPatch, tmp_path):
     monkeypatch.setenv("PRV_CHUNK_OVERLAP", "20")
     monkeypatch.setenv("PRV_USE_FILE_CACHE", "false")
     monkeypatch.setenv("PRV_USE_FTS", "false")
+    monkeypatch.setenv("PRV_USE_EMBEDDING_CACHE", "false")
     reset_settings()
     reset_client()
     reset_model()
