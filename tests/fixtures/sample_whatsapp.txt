@@ -1,0 +1,6 @@
+21/05/2024, 14:30 - John: Hey, how's the RAG project going?
+21/05/2024, 14:32 - You: Pretty well! Just added streaming to the UI.
+21/05/2024, 14:35 - John: Nice! Any plans for WhatsApp support?
+21/05/2024, 14:36 - You: Funny you should ask... I'm working on it right now.
+21/05/2024, 14:40 - John: <Media omitted>
+21/05/2024, 14:41 - John: Here's a screenshot of my Obsidian vault.

@@ -15,6 +15,7 @@ from src.ingest.parsers.obsidian import ObsidianMarkdownParser
 from src.ingest.parsers.pinboard import PinboardParser
 from src.ingest.parsers.raindrop import RaindropParser
 from src.ingest.parsers.telegram import TelegramParser
+from src.ingest.parsers.whatsapp import WhatsAppParser
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ def _init_registry() -> None:
     _register(BookmarksHTMLParser)  # Chrome/Edge/Brave bookmark HTML exports
     _register(RaindropParser)       # Raindrop.io JSON exports
     _register(PinboardParser)       # Pinboard JSON exports
+    _register(WhatsAppParser)       # WhatsApp chat exports (very common personal data)
 
     # Optional OCR support (only if user installed with [ocr] extra and tesseract is present)
     try:

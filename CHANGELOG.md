@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - iCalendar (.ics) parser — first-class support for calendar events and meetings (very high-value personal data)
 - Browser bookmark ingestion — Chrome/Edge/Brave HTML exports with folder hierarchy, tags, and dates
 - Raindrop.io and Pinboard JSON export support (extends the bookmark ingestion system)
+- WhatsApp chat export parser (very common personal messaging data)
 - Significantly expanded large-vault guidance inside `personalragvault doctor`
 - Streaming responses in the Streamlit UI (token-by-token answer generation)
 

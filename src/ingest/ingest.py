@@ -33,6 +33,8 @@ SUPPORTED_EXTENSIONS: Set[str] = {
     # Browser bookmarks (detected by content + extension)
     ".html",
     ".htm",
+    # Messaging exports
+    ".txt",  # WhatsApp, etc.
 }
 
 
