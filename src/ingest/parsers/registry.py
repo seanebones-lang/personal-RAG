@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Type
 
 from src.ingest.parsers.base import BaseParser, ExtractedDocument
+from src.ingest.parsers.bookmarks import BookmarksHTMLParser
 from src.ingest.parsers.eml import EmlParser
 from src.ingest.parsers.ics import IcsParser
 from src.ingest.parsers.mbox import MboxParser
@@ -31,7 +32,8 @@ def _init_registry() -> None:
     _register(MboxParser)
     _register(TelegramParser)
     _register(ObsidianMarkdownParser)
-    _register(IcsParser)  # Calendar data (.ics) - very high value for personal knowledge
+    _register(IcsParser)  # Calendar data (.ics)
+    _register(BookmarksHTMLParser)  # Chrome/Edge/Brave bookmark HTML exports
 
     # Optional OCR support (only if user installed with [ocr] extra and tesseract is present)
     try:

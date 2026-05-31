@@ -21,7 +21,7 @@ If this project helps you, consider starring the repo on GitHub.
 
 | Feature | Description |
 |---------|-------------|
-| Ingest | PDF, TXT, MD, JSON, DOCX, **.ics calendar**, **images (optional OCR)**, and common code/text formats |
+| Ingest | PDF, TXT, MD, JSON, DOCX, **.ics calendar**, **browser bookmarks**, **images (optional OCR)**, and common code/text formats |
 | Chunking | Multiple strategies (semantic, prose, Markdown/Python aware) |
 | Dedup | Stable chunk IDs; re-ingest updates instead of duplicating |
 | Query | Hybrid + multi-query + rerank + parent expansion + **streaming answers** |
