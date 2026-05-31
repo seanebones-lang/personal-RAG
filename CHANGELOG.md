@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reranking UX: New preset system (`PRV_RERANK_PRESET=tiny|mini|bge`) with `personalragvault rerankers list`
 - Reranking discoverability (better hints in `models list` and configuration)
 - Demo / community contribution section in README
+- Large Vaults guide now includes real benchmark numbers (query latency, ingestion throughput, memory) measured on Apple Silicon
 
 ## [1.1.0] - 2026-06-01
 

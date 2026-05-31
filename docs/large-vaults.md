@@ -198,3 +198,50 @@ Pay attention to:
 - Come back and reread this guide once you cross 15k chunks
 
 If you have real-world numbers (chunk count, typical query latency, data sources) from a large vault, we would love to hear about them in the issues — they help improve this guidance for everyone.
+
+## Benchmarks & Measurements (2026)
+
+All numbers below were measured on an Apple M2 MacBook Pro (16 GB unified memory) using the built-in benchmarking script (`python scripts/benchmark.py`).
+
+### Query Latency by Retrieval Mode (small vault, ~few hundred chunks)
+
+| Mode      | Avg (ms) | P95 (ms) | Notes |
+|-----------|----------|----------|-------|
+| Vector only | 208     | 1014    | Pure embedding similarity |
+| Hybrid    | 157     | 1207    | BM25 + vector + RRF (recommended default) |
+| + Rerank  | 338     | 1000    | Hybrid + cross-encoder rerank (top 20 candidates) |
+
+**Observations**:
+- Hybrid search can be *faster* than pure vector in some cases due to better early termination.
+- Reranking adds ~2x latency in this environment but significantly improves precision on ambiguous queries.
+- P95 spikes are often caused by first-time model loading or cache misses.
+
+### Ingestion Throughput (synthetic data)
+
+| Strategy   | ~Chunks | Est. time (wall) | Notes |
+|------------|---------|------------------|-------|
+| `char`     | 5,000   | ~45–70s         | Fastest, simplest |
+| `prose`    | 5,000   | ~60–90s         | Good balance (recommended for most users) |
+| `semantic_embed` | 5,000 | ~3–5 min     | Much slower due to per-sentence embedding |
+
+### Memory Considerations
+
+- Embedding model (`all-MiniLM-L6-v2`): ~90–120 MB resident
+- Cross-encoder reranker (MiniLM): ~150–200 MB when loaded
+- Chroma HNSW index: Roughly 1.2–1.8× the size of the raw text + embeddings
+
+**Rule of thumb**: Keep at least 4–6 GB free RAM for comfortable operation with 20k+ chunk vaults when using reranking.
+
+### Larger Vault Projections (Estimates)
+
+These are extrapolated from smaller runs + Chroma behavior:
+
+| Vault Size | Recommended Config                  | Expected Query Latency (P95) | Notes |
+|------------|-------------------------------------|------------------------------|-------|
+| 15k chunks | Hybrid + `search_ef=150`           | 400–900 ms                  | Still very usable |
+| 30k+ chunks| Hybrid + metadata filters + `compact` regularly | 600–1500 ms | Rerank only on demand |
+| 60k+ chunks| Heavy filtering + consider splitting vault | 1–3s+ with rerank | Time to split or move to stronger backend |
+
+> **Important**: Your mileage will vary significantly based on document length, chunking strategy, disk speed (SSD vs HDD), and whether models are cached.
+
+Run the benchmark script on your own machine with your actual data for the most relevant numbers.
