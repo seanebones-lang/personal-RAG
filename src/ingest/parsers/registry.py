@@ -11,6 +11,7 @@ from src.ingest.parsers.bookmarks import BookmarksHTMLParser
 from src.ingest.parsers.eml import EmlParser
 from src.ingest.parsers.ics import IcsParser
 from src.ingest.parsers.mbox import MboxParser
+from src.ingest.parsers.notion import NotionParser
 from src.ingest.parsers.obsidian import ObsidianMarkdownParser
 from src.ingest.parsers.pinboard import PinboardParser
 from src.ingest.parsers.raindrop import RaindropParser
@@ -40,6 +41,7 @@ def _init_registry() -> None:
     _register(RaindropParser)       # Raindrop.io JSON exports
     _register(PinboardParser)       # Pinboard JSON exports
     _register(WhatsAppParser)       # WhatsApp chat exports (very common personal data)
+    _register(NotionParser)         # Notion Markdown exports
 
     # Optional OCR support (only if user installed with [ocr] extra and tesseract is present)
     try:
