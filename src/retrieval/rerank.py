@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
+from src.retrieval.reranker_presets import resolve_reranker_model
+
 
 def rerank_results(
     query: str,
@@ -22,7 +24,9 @@ def rerank_results(
             "Install with: pip install personalragvault[retrieval]"
         ) from exc
 
-    model = CrossEncoder(model_name)
+    # Support preset names (mini, tiny, bge) or direct model IDs
+    resolved_model = resolve_reranker_model(model_name)
+    model = CrossEncoder(resolved_model)
     pairs = [(query, r.get("text", "")) for r in results]
     scores = model.predict(pairs)
     scored = list(zip(results, scores))

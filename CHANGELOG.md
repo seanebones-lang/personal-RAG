@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Significantly expanded large-vault guidance inside `personalragvault doctor`
 
 ### Improved
+- Reranking UX: New preset system (`PRV_RERANK_PRESET=tiny|mini|bge`) with `personalragvault rerankers list`
 - Reranking discoverability (better hints in `models list` and configuration)
 - Demo / community contribution section in README
 

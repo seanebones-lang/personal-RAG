@@ -84,11 +84,21 @@ Reranking improves precision but adds significant latency at scale.
 - **15k–40k chunks**: Use reranking only on high-stakes queries or via a dedicated "deep search" alias.
 - **> 40k chunks**: Prefer metadata filtering + hybrid over reranking in most cases.
 
+Use lightweight presets for better CPU performance:
+
+```bash
+export PRV_RERANK_PRESET=tiny     # fastest
+# or
+export PRV_RERANK_PRESET=mini     # balanced (default)
+```
+
 You can control reranker aggressiveness with:
 
 ```bash
 export PRV_RERANK_CANDIDATES=12   # lower = faster
 ```
+
+See `personalragvault rerankers list` for available presets.
 
 ### 6. HNSW Tuning
 

@@ -25,15 +25,18 @@ from src.diagnostics import check_large_vault_recommendations, run_full_diagnost
 from src.ingest.ingest import all_supported_extensions, validate_ingest_path
 from src.ingest.watcher import run_watch
 from src.ollama_client import extract_citations
+from src.retrieval.reranker_presets import list_reranker_presets
 
 app = typer.Typer(help="PersonalRAGVault - Local personal RAG")
 models_app = typer.Typer(help="Embedding model presets")
 eval_app = typer.Typer(help="Retrieval evaluation")
 config_app = typer.Typer(help="Configuration (env + optional TOML file)")
+rerankers_app = typer.Typer(help="Reranker model presets")
 
 app.add_typer(models_app, name="models")
 app.add_typer(eval_app, name="eval")
 app.add_typer(config_app, name="config")
+app.add_typer(rerankers_app, name="rerankers")
 
 console = Console()
 _stderr = Console(stderr=True)
@@ -305,10 +308,35 @@ def models_list() -> None:
     console.print(table)
     console.print("\nUse: export PRV_EMBED_PRESET=bge-small  (or PRV_EMBED_MODEL=...)")
     console.print(
-        "\n[dim]Reranking: Set PRV_RERANK=true and optionally PRV_RERANK_MODEL=... "
-        "(default: cross-encoder/ms-marco-MiniLM-L-6-v2). "
-        "Lighter/faster alternatives exist on the Hugging Face hub.[/dim]"
+        "\n[dim]Reranking: Set PRV_RERANK=true and optionally PRV_RERANK_PRESET=... "
+        "(mini | tiny | bge). See `personalragvault rerankers list`[/dim]"
     )
+
+
+@rerankers_app.command("list")
+def rerankers_list() -> None:
+    """List available reranker presets (lightweight options for local use)."""
+    table = Table(title="Reranker Presets")
+    table.add_column("Preset")
+    table.add_column("Model ID")
+    table.add_column("Size")
+    table.add_column("Description")
+    table.add_column("Best For")
+
+    for row in list_reranker_presets():
+        table.add_row(
+            row["name"],
+            row["model_id"],
+            row["size"],
+            row["description"],
+            row["recommended_for"],
+        )
+
+    console.print(table)
+    console.print("\nUsage:")
+    console.print("  export PRV_RERANK_PRESET=mini   # or tiny / bge")
+    console.print("  export PRV_RERANK=true")
+    console.print("\n[dim]Install with: pip install \"personalragvault[retrieval]\"[/dim]")
 
 
 @config_app.command("show")

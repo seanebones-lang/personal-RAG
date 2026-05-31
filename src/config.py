@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from src.embed.presets import resolve_embed_model
+from src.retrieval.reranker_presets import resolve_reranker_model
 
 CHUNK_STRATEGIES = frozenset({"char", "recursive", "semantic", "prose", "semantic_embed"})
 
@@ -171,7 +172,8 @@ class Settings:
             rerank=_bool_env("PRV_RERANK", False),
             rerank_candidates=_int_env("PRV_RERANK_CANDIDATES", 20, minimum=5),
             rerank_model=os.environ.get(
-                "PRV_RERANK_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2"
+                "PRV_RERANK_MODEL",
+                resolve_reranker_model(os.environ.get("PRV_RERANK_PRESET")),
             ),
             parent_expand=_bool_env("PRV_PARENT_EXPAND", False),
         )
