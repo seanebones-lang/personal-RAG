@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from src.config import get_settings
 from src.embed.embedder import (
@@ -16,7 +17,12 @@ from src.embed.embedder import (
 from src.embed.presets import EMBED_PRESETS, preset_for_model
 from src.filters import build_where
 from src.ingest.pipeline import build_documents_from_folder
-from src.ollama_client import build_context, check_ollama_model, generate_answer
+from src.ollama_client import (
+    build_tagged_context,
+    check_ollama_model,
+    generate_answer,
+    generate_answer_stream,
+)
 from src.retrieval.hybrid import hybrid_search
 from src.retrieval.multi_query import (
     expand_queries_heuristic,
@@ -133,12 +139,16 @@ def run_query(
     expand_query: bool = False,
     rerank: bool = False,
     parent_expand: bool = False,
+    history: Optional[List[Tuple[str, str]]] = None,
+    stream: bool = False,
 ) -> Dict[str, Any]:
     settings = get_settings()
     use_multi = multi_query or settings.multi_query
     use_expand = expand_query or settings.expand_query_ollama
     use_rerank = rerank or settings.rerank
     use_parent = parent_expand or settings.parent_expand
+
+    t0 = time.perf_counter()
 
     def _vector_search(emb, k: int) -> List[Dict[str, Any]]:
         return search(emb, top_k=k, max_distance=max_distance, where=where)
@@ -186,30 +196,51 @@ def run_query(
     if use_parent:
         results = expand_parent_chunks(results)
 
-    context = build_context(results, settings.max_context_chars)
+    retrieval_time = time.perf_counter() - t0
+
+    # Use tagged + lightly compressed context for much better grounding + citations
+    context = build_tagged_context(results, settings.max_context_chars, compress=True)
+
     answer = None
     llm_error = None
+    generation_time = 0.0
+    answer_stream = None
+
     if use_llm and results:
         try:
             check_ollama_model()
             prompt = (
-                "You are a helpful assistant with access to the user's "
-                "personal knowledge base.\n"
-                "Use the following context to answer the question. "
-                "If the answer is not in the context, say so.\n\n"
+                "Use the following context from the user's personal knowledge base "
+                "to answer the question.\nCite sources using the exact [Source: ...] "
+                "labels shown.\n\n"
                 f"Context:\n{context}\n\n"
                 f"Question: {question}\n\n"
                 "Answer:"
             )
-            answer = generate_answer(prompt)
+
+            if stream:
+                # Return a generator the caller can iterate for token-by-token streaming
+                answer_stream = generate_answer_stream(prompt, history=history)
+            else:
+                t_gen = time.perf_counter()
+                answer = generate_answer(prompt, history=history)
+                generation_time = time.perf_counter() - t_gen
         except Exception as exc:
             llm_error = str(exc)
+
+    total_time = time.perf_counter() - t0
 
     return {
         "results": results,
         "context": context,
         "answer": answer,
         "llm_error": llm_error,
+        "answer_stream": answer_stream,
+        "timings": {
+            "retrieval": round(retrieval_time, 3),
+            "generation": round(generation_time, 3) if generation_time > 0 else None,
+            "total": round(total_time, 3),
+        },
     }
 
 

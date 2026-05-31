@@ -191,3 +191,75 @@ def reset_settings() -> None:
     """Reset cached settings (for tests)."""
     global _settings
     _settings = None
+
+
+# ---------------------------------------------------------------------------
+# Optional TOML config file support (PRV_CONFIG_PATH or ~/.personalragvault/config.toml)
+# Keys in TOML use the same names as env vars (without the PRV_ prefix for brevity in some cases).
+# Example:
+#   [core]
+#   embed_model = "bge-small"
+#   chunk_strategy = "prose"
+# ---------------------------------------------------------------------------
+
+def _load_config_file() -> dict:
+    """Load optional TOML config. Returns flat dict of uppercased keys suitable for os.environ."""
+    import os
+    from pathlib import Path
+
+    config_path = os.environ.get("PRV_CONFIG_PATH")
+    if config_path:
+        candidates = [Path(config_path)]
+    else:
+        candidates = [
+            Path("~/.personalragvault/config.toml").expanduser(),
+            Path(".personalragvault.toml"),
+        ]
+
+    for path in candidates:
+        if not path.exists():
+            continue
+        try:
+            if path.suffix == ".toml":
+                try:
+                    import tomllib  # Python 3.11+
+                except ImportError:
+                    import tomli as tomllib  # type: ignore
+                data = tomllib.loads(path.read_text(encoding="utf-8"))
+            else:
+                continue
+        except Exception as exc:
+            # Don't crash the whole app on bad config file
+            import logging
+            logging.getLogger(__name__).warning("Failed to load config file %s: %s", path, exc)
+            continue
+
+        flat: dict[str, str] = {}
+
+        def _flatten(prefix: str, obj: dict):
+            for k, v in obj.items():
+                key = f"{prefix}{k}".upper()
+                if isinstance(v, dict):
+                    _flatten(f"{key}_", v)
+                elif isinstance(v, (list, tuple)):
+                    flat[key] = ",".join(str(x) for x in v)
+                else:
+                    flat[key] = str(v)
+
+        _flatten("PRV_", data)
+        return flat
+
+    return {}
+
+
+def _apply_config_file_to_env() -> None:
+    """Merge config file values into os.environ (env vars win)."""
+    import os
+    cfg = _load_config_file()
+    for k, v in cfg.items():
+        if k not in os.environ:
+            os.environ[k] = v
+
+
+# Apply config file very early (before first get_settings call in normal flow)
+_apply_config_file_to_env()

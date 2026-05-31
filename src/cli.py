@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import shutil
 from pathlib import Path
 from typing import Optional
 
@@ -20,14 +21,19 @@ from src.core.vault import (
     run_purge,
     run_query,
 )
+from src.diagnostics import check_large_vault_recommendations, run_full_diagnostics
 from src.ingest.ingest import all_supported_extensions, validate_ingest_path
 from src.ingest.watcher import run_watch
+from src.ollama_client import extract_citations
 
 app = typer.Typer(help="PersonalRAGVault - Local personal RAG")
 models_app = typer.Typer(help="Embedding model presets")
 eval_app = typer.Typer(help="Retrieval evaluation")
+config_app = typer.Typer(help="Configuration (env + optional TOML file)")
+
 app.add_typer(models_app, name="models")
 app.add_typer(eval_app, name="eval")
+app.add_typer(config_app, name="config")
 
 console = Console()
 _stderr = Console(stderr=True)
@@ -80,7 +86,7 @@ def ingest(
     chunk_strategy: Optional[str] = typer.Option(
         None,
         "--chunk-strategy",
-        help="Override PRV_CHUNK_STRATEGY for this ingest only",
+        help="Override PRV_CHUNK_STRATEGY for this ingest only (warning: semantic_embed is slow)",
     ),
 ) -> None:
     """Ingest supported files from a directory."""
@@ -105,6 +111,11 @@ def ingest(
         raise typer.Exit(code=1)
     if not _quiet:
         console.print(f"[bold green]Ingestion complete.[/bold green] ({count} chunks)")
+    if chunk_strategy and "semantic_embed" in str(chunk_strategy).lower():
+        console.print(
+            "[yellow]Note: semantic_embed chunking was used. This is high-quality but CPU-heavy. "
+            "Run `personalragvault doctor` if you see performance issues.[/yellow]"
+        )
 
 
 @app.command()
@@ -174,6 +185,7 @@ def query(
             expand_query=expand_query,
             rerank=rerank,
             parent_expand=parent_expand,
+            stream=not no_llm and not _quiet,   # beautiful streaming by default in interactive CLI
         )
     except RuntimeError as exc:
         _stderr.print(f"[red]Error:[/red] {exc}")
@@ -213,9 +225,55 @@ def query(
         console.print(out["context"])
         return
 
+    # Streaming path for excellent UX (token by token)
+    stream_gen = out.get("answer_stream")
+    if stream_gen:
+        console.print("\n[bold green]Answer:[/bold green]", end="")
+        full_answer = ""
+        for token in stream_gen:
+            console.print(token, end="")
+            full_answer += token
+        console.print()  # newline
+
+        # Timings (note: generation time is not accurate in pure stream mode yet)
+        timings = out.get("timings") or {}
+        if timings and not _quiet:
+            parts = []
+            if timings.get("retrieval") is not None:
+                parts.append(f"retrieval {timings['retrieval']}s")
+            if timings.get("total"):
+                parts.append(f"total {timings['total']}s")
+            console.print(f"[dim]⏱  {' | '.join(parts)}[/dim]")
+
+        citations = extract_citations(full_answer)
+        if citations and not _quiet:
+            console.print("\n[dim]Sources cited:[/dim]")
+            for c in citations[:8]:
+                console.print(f"  [dim]•[/dim] {c}")
+        return
+
+    # Fallback non-streaming path
     if out["answer"]:
         console.print("\n[bold green]Answer:[/bold green]")
         console.print(out["answer"])
+
+        timings = out.get("timings") or {}
+        if timings:
+            parts = []
+            if timings.get("retrieval") is not None:
+                parts.append(f"retrieval {timings['retrieval']}s")
+            if timings.get("generation"):
+                parts.append(f"generation {timings['generation']}s")
+            if timings.get("total"):
+                parts.append(f"total {timings['total']}s")
+            if parts and not _quiet:
+                console.print(f"[dim]⏱  {' | '.join(parts)}[/dim]")
+
+        citations = extract_citations(out["answer"])
+        if citations and not _quiet:
+            console.print("\n[dim]Sources cited:[/dim]")
+            for c in citations[:8]:
+                console.print(f"  [dim]•[/dim] {c}")
     elif out["llm_error"]:
         _stderr.print(f"[yellow]Ollama error:[/yellow] {out['llm_error']}")
         if _debug:
@@ -248,6 +306,78 @@ def models_list() -> None:
     console.print("\nUse: export PRV_EMBED_PRESET=bge-small  (or PRV_EMBED_MODEL=...)")
 
 
+@config_app.command("show")
+def config_show() -> None:
+    """Show effective configuration (env vars + loaded TOML file)."""
+    from src.config import get_settings
+
+    s = get_settings()
+    console.print("[bold]Effective configuration[/bold]\n")
+    console.print(f"  DB path: {s.db_path}")
+    console.print(f"  Embed model: {s.embed_model} (preset={s.embed_preset})")
+    console.print(f"  Chunk strategy: {s.chunk_strategy}")
+    console.print(f"  Ollama: {s.ollama_host} / {s.ollama_model}")
+    console.print(f"  Max context chars: {s.max_context_chars}")
+    console.print("\n[dim]Advanced retrieval defaults can be overridden per-query.[/dim]")
+    console.print(
+        "[dim]Config file loaded from ~/.personalragvault/config.toml "
+        "or PRV_CONFIG_PATH (env vars always win)[/dim]"
+    )
+
+
+@config_app.command("edit")
+def config_edit() -> None:
+    """Open the config file in your editor (creates a helpful template if missing)."""
+    import os
+    import subprocess
+    from pathlib import Path
+
+    default_cfg = "~/.personalragvault/config.toml"
+    config_path = Path(os.environ.get("PRV_CONFIG_PATH") or default_cfg).expanduser()
+
+    if not config_path.exists():
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        template = """# PersonalRAGVault configuration
+# This file is loaded in addition to environment variables (env vars win).
+
+[core]
+# embed_model = "bge-small"
+# chunk_strategy = "prose"
+# ollama_model = "llama3.2"
+
+[retrieval]
+# multi_query = true
+# rerank = true
+# hybrid = true
+"""
+        config_path.write_text(template, encoding="utf-8")
+        console.print(f"[green]Created template config at {config_path}[/green]")
+
+    editor = os.environ.get("EDITOR")
+    if not editor:
+        # Sensible macOS/Linux fallbacks
+        for candidate in ["code", "subl", "nano", "vim", "open -t"]:
+            if candidate == "open -t":
+                editor = candidate
+                break
+            if shutil.which(candidate.split()[0]):
+                editor = candidate
+                break
+    if not editor:
+        editor = "nano"
+
+    console.print(f"Opening {config_path} with {editor}...")
+
+    try:
+        if editor == "open -t":
+            subprocess.run(["open", "-t", str(config_path)], check=False)
+        else:
+            subprocess.run([*editor.split(), str(config_path)], check=False)
+    except Exception as exc:
+        _stderr.print(f"[red]Failed to open editor:[/red] {exc}")
+        console.print(f"You can edit it manually at: {config_path}")
+
+
 @app.command()
 def status() -> None:
     """Show vault status."""
@@ -275,6 +405,35 @@ def status() -> None:
     for key, val in info.sidecar_stats.items():
         if key.endswith("_bytes"):
             console.print(f"  {key}: {val}")
+
+
+@app.command()
+def doctor() -> None:
+    """Run health checks and diagnostics (highly recommended after model changes)."""
+    info = get_status_info()
+    console.print("[bold cyan]PersonalRAGVault Doctor[/bold cyan]\n")
+
+    results = run_full_diagnostics(chunk_count=info.chunk_count)
+
+    for r in results:
+        icon = "[green]✓[/green]" if r.ok else "[red]✗[/red]"
+        console.print(f"{icon} {r.name}: {r.message}")
+        if r.detail:
+            console.print(f"    [dim]{r.detail}[/dim]")
+
+    # Large vault tips
+    tips = check_large_vault_recommendations(info.chunk_count)
+    if tips:
+        console.print("\n[yellow]Recommendations for your vault size:[/yellow]")
+        for t in tips:
+            console.print(f"  • {t}")
+
+    # Final summary
+    failures = [r for r in results if not r.ok]
+    if failures:
+        console.print(f"\n[red]Found {len(failures)} issue(s) that should be addressed.[/red]")
+    else:
+        console.print("\n[green]All core checks passed.[/green]")
 
 
 @app.command()

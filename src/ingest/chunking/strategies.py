@@ -57,6 +57,15 @@ def _split_by_strategy(text: str, settings, strategy: str) -> List[str]:
     if strategy in ("semantic", "prose"):
         return _prose_split(text, settings)
     if strategy == "semantic_embed":
+        import warnings
+        warnings.warn(
+            "semantic_embed chunking embeds every sentence during ingestion. "
+            "This is high quality but significantly slower and more CPU-heavy "
+            "than other strategies. Consider 'prose' or 'recursive' for large "
+            "folders unless you have measured a quality win.",
+            UserWarning,
+            stacklevel=2,
+        )
         return _semantic_embed_split(text, settings)
     return _char_split(text, settings.chunk_size, settings.chunk_overlap)
 
