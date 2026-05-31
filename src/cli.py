@@ -304,6 +304,11 @@ def models_list() -> None:
         )
     console.print(table)
     console.print("\nUse: export PRV_EMBED_PRESET=bge-small  (or PRV_EMBED_MODEL=...)")
+    console.print(
+        "\n[dim]Reranking: Set PRV_RERANK=true and optionally PRV_RERANK_MODEL=... "
+        "(default: cross-encoder/ms-marco-MiniLM-L-6-v2). "
+        "Lighter/faster alternatives exist on the Hugging Face hub.[/dim]"
+    )
 
 
 @config_app.command("show")

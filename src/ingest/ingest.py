@@ -29,6 +29,7 @@ SUPPORTED_EXTENSIONS: Set[str] = {
     ".rst",
     ".eml",
     ".mbox",
+    ".ics",  # Calendar data (iCalendar)
 }
 
 

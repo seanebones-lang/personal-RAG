@@ -8,6 +8,7 @@ from typing import Dict, List, Type
 
 from src.ingest.parsers.base import BaseParser, ExtractedDocument
 from src.ingest.parsers.eml import EmlParser
+from src.ingest.parsers.ics import IcsParser
 from src.ingest.parsers.mbox import MboxParser
 from src.ingest.parsers.obsidian import ObsidianMarkdownParser
 from src.ingest.parsers.telegram import TelegramParser
@@ -30,6 +31,7 @@ def _init_registry() -> None:
     _register(MboxParser)
     _register(TelegramParser)
     _register(ObsidianMarkdownParser)
+    _register(IcsParser)  # Calendar data (.ics) - very high value for personal knowledge
 
     # Optional OCR support (only if user installed with [ocr] extra and tesseract is present)
     try:

@@ -21,7 +21,7 @@ If this project helps you, consider starring the repo on GitHub.
 
 | Feature | Description |
 |---------|-------------|
-| Ingest | PDF, TXT, MD, JSON, DOCX, **images (optional OCR)**, and common code/text formats |
+| Ingest | PDF, TXT, MD, JSON, DOCX, **.ics calendar**, **images (optional OCR)**, and common code/text formats |
 | Chunking | Multiple strategies (semantic, prose, Markdown/Python aware) |
 | Dedup | Stable chunk IDs; re-ingest updates instead of duplicating |
 | Query | Hybrid + multi-query + rerank + parent expansion + **streaming answers** |
@@ -71,6 +71,14 @@ personalragvault ui
 ```
 
 Open **http://127.0.0.1:8501** (localhost only).
+
+## Demo
+
+A short demo GIF or video is one of the best ways to understand the tool.
+
+See [docs/assets/DEMO.md](docs/assets/DEMO.md) for instructions on how to record one.
+
+If you create a nice demo, please consider sharing it (we'd love to feature community contributions).
 
 ## Screenshots
 

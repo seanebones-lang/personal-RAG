@@ -132,15 +132,26 @@ def check_caches() -> CheckResult:
 
 def check_large_vault_recommendations(chunk_count: int) -> List[str]:
     tips: List[str] = []
-    if chunk_count > 8000:
+    if chunk_count > 5000:
         tips.append(
-            "Large vault detected (>8k chunks). "
-            "Consider enabling --hybrid and running 'personalragvault compact' regularly."
+            "Medium+ vault detected. Run 'personalragvault compact' periodically "
+            "and consider using metadata filters (--where-year, --source-contains, etc.)."
         )
-    if chunk_count > 25000:
+    if chunk_count > 15000:
         tips.append(
-            "Very large vault. You may benefit from --rerank with a fast reranker "
-            "and tighter metadata filters."
+            "Large vault (>15k chunks). Strongly recommended: enable --hybrid search "
+            "and keep PRV_HYBRID_FETCH_LIMIT reasonable (default 5000 is usually fine)."
+        )
+    if chunk_count > 30000:
+        tips.append(
+            "Very large vault. Use reranking selectively (it adds latency). "
+            "Prefer metadata filtering + hybrid search over pure vector + rerank. "
+            "Consider splitting your vault by year or project using multiple PRV_DB_PATHs."
+        )
+    if chunk_count > 60000:
+        tips.append(
+            "Extremely large vault. At this scale consider external tools "
+            "(LanceDB, pgvector, etc.) or more aggressive chunking."
         )
     return tips
 
