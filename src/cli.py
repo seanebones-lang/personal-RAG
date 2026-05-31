@@ -433,6 +433,11 @@ def doctor() -> None:
         for t in tips:
             console.print(f"  • {t}")
 
+    if info.chunk_count > 8000:
+        console.print(
+            "\n[dim]For detailed scaling guidance, see: docs/large-vaults.md[/dim]"
+        )
+
     # Final summary
     failures = [r for r in results if not r.ok]
     if failures:

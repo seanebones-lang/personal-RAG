@@ -78,6 +78,8 @@ A short demo GIF or video is one of the best ways to understand the tool.
 
 See [docs/assets/DEMO.md](docs/assets/DEMO.md) for instructions on how to record one.
 
+**Power users**: Once your vault grows beyond ~10k chunks, read the [Large Vaults guide](docs/large-vaults.md).
+
 If you create a nice demo, please consider sharing it (we'd love to feature community contributions).
 
 ## Screenshots

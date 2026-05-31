@@ -15,6 +15,7 @@ Welcome. This folder is the full guide for installing, using, developing, and co
 | [Roadmap](roadmap.md) | Planned improvements |
 | [Evaluation](evaluation.md) | Hit@k, MRR, NDCG, synthetic datasets |
 | [Community](community.md) | GitHub topics and demo GIF |
+| [Large Vaults](large-vaults.md) | Scaling guidance for 10k–100k+ chunk collections |
 | [Telegram source](sources/telegram.md) | Telegram export ingest |
 | [Obsidian source](sources/obsidian.md) | Obsidian vault ingest |
 | [Development](development.md) | Local dev setup, tests, CI |
