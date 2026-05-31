@@ -7,17 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-02
+
 ### Added
-- iCalendar (.ics) parser — first-class support for calendar events and meetings (very high-value personal data)
-- Browser bookmark ingestion — Chrome/Edge/Brave HTML exports with folder hierarchy, tags, and dates
-- Raindrop.io and Pinboard JSON export support (extends the bookmark ingestion system)
-- WhatsApp chat export parser (very common personal messaging data)
-- Basic Notion Markdown export parser (with property extraction)
-- Significantly expanded large-vault guidance inside `personalragvault doctor`
-- Streaming responses in the Streamlit UI (token-by-token answer generation)
+- **Major ingestion expansion**:
+  - iCalendar (.ics) parser for calendar events and meetings
+  - Full browser bookmark support: Chrome/Edge HTML exports + Raindrop.io + Pinboard
+  - WhatsApp chat export parser (very common personal messaging data)
+  - Basic Notion Markdown export parser with property extraction
+- Streaming responses now available in the Streamlit UI (token-by-token)
+- `personalragvault rerankers list` + preset system (`tiny` / `mini` / `bge`)
 
 ### Improved
-- Reranking UX: New preset system (`PRV_RERANK_PRESET=tiny|mini|bge`) with `personalragvault rerankers list`
+- Reranking UX: Easy preset system via `PRV_RERANK_PRESET`
+- Significantly expanded "Large Vaults" guide with real performance benchmarks
+- `personalragvault doctor` now gives better scaling advice at higher vault sizes
+
+### Changed
+- Version bumped to 1.2.0 to reflect the substantial increase in personal data source coverage and UX improvements.
 - Reranking discoverability (better hints in `models list` and configuration)
 - Demo / community contribution section in README
 - Large Vaults guide now includes real benchmark numbers (query latency, ingestion throughput, memory) measured on Apple Silicon
