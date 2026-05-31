@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-01
+
 ### Added
 - **Reliability**: `personalragvault doctor` — full health checks including critical embedding dimension consistency detection
 - **Configuration**: `personalragvault config edit` + proper TOML config file support (`~/.personalragvault/config.toml` or `PRV_CONFIG_PATH`)
