@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Reliability**: `personalragvault doctor` — full health checks including critical embedding dimension consistency detection
+- **Configuration**: `personalragvault config edit` + proper TOML config file support (`~/.personalragvault/config.toml` or `PRV_CONFIG_PATH`)
+- **UX**: Streaming answers in CLI (token-by-token via Ollama)
+- **Grounding**: Source-tagged context + automatic citation extraction and display in both CLI and UI
+- **Multi-turn**: Real conversation history passed to the LLM for follow-up questions (CLI + UI)
+- **Ingestion**: Optional OCR support via `pip install "personalragvault[ocr]"` (images + basic scanned documents)
+- **Observability**: Per-query timing breakdown (retrieval / generation / total)
+- **Safety**: Strong runtime warnings when using expensive chunking strategies (e.g. `semantic_embed`)
+
+### Changed
+- `build_tagged_context` is now the default context builder for LLM generation
+- `run_query` now supports `stream=True` for streaming generation
+- Improved prompt engineering to encourage proper source citation
+
+### Improved
+- Much better developer and power-user experience (doctor, config, timing, citations)
+- Significantly improved perceived performance with streaming
+- More robust handling when users change embedding models
+
 ## [1.0.0] - 2026-05-30
 
 ### Added

@@ -21,12 +21,24 @@ If this project helps you, consider starring the repo on GitHub.
 
 | Feature | Description |
 |---------|-------------|
-| Ingest | PDF, TXT, MD, JSON, DOCX, and common code/text formats |
-| Chunking | Overlapping chunks for better retrieval on large documents |
+| Ingest | PDF, TXT, MD, JSON, DOCX, **images (optional OCR)**, and common code/text formats |
+| Chunking | Multiple strategies (semantic, prose, Markdown/Python aware) |
 | Dedup | Stable chunk IDs; re-ingest updates instead of duplicating |
-| Query | Vector search + optional Ollama generation (`--no-llm` for retrieval only) |
+| Query | Hybrid + multi-query + rerank + parent expansion + **streaming answers** |
+| Citations | Model cites sources; CLI automatically extracts and displays them |
+| Diagnostics | `doctor` + `config edit` for reliable local operation |
 | Watch | Debounced folder watching for automatic re-ingest |
-| Manage | `status`, `purge`, `reindex` commands |
+| Manage | `status`, `purge`, `reindex`, `compact`, evaluation tools |
+
+## Recent major improvements
+
+- `personalragvault doctor` — embedding dimension safety, Ollama health, large-vault advice
+- `personalragvault config edit` — proper TOML configuration with editor integration
+- **Streaming answers** in the CLI (token-by-token)
+- Automatic citation extraction and display
+- Optional OCR: `pip install "personalragvault[ocr]"`
+- Real multi-turn conversations in the UI
+- Query timing breakdown
 
 ## Quick start
 
@@ -38,10 +50,15 @@ cd personal-RAG
 
 ./scripts/setup.sh --dev    # or: python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
 
+# Optional but recommended extras
+pip install -e ".[ui]"          # Streamlit web interface
+pip install -e ".[ocr]"         # OCR for scanned PDFs and images (requires tesseract)
+
 ollama pull llama3.2        # optional; skip if using --no-llm
 
+personalragvault doctor          # recommended first step
 personalragvault ingest ~/Downloads
-personalragvault query "find my notes about RAG systems"
+personalragvault query "find my notes about RAG systems"   # now streams + shows citations
 ```
 
 See **[docs/getting-started.md](docs/getting-started.md)** for the full walkthrough.

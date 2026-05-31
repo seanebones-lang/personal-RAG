@@ -14,6 +14,7 @@ from src.core.vault import (
     run_purge,
     run_query,
 )
+from src.ollama_client import extract_citations
 from src.ui.components.export_ui import render_export_buttons
 from src.ui.components.preview import render_preview_panel
 from src.ui.components.results import render_results
@@ -115,6 +116,15 @@ with tab_query:
                 source_contains=source_contains or None,
                 extension=extension or None,
             )
+
+            # Build recent conversation history for multi-turn
+            history = []
+            for msg in st.session_state.messages[-4:]:  # last 2 exchanges
+                q = msg.get("question")
+                a = msg.get("answer")
+                if q:
+                    history.append((q, a or ""))
+
             with st.spinner("Searching..."):
                 out = run_query(
                     question,
@@ -125,6 +135,7 @@ with tab_query:
                     multi_query=multi_query,
                     rerank=rerank,
                     parent_expand=parent_expand,
+                    history=history,
                 )
             add_turn(question, out.get("answer"), out["results"])
             st.session_state.last_query_out = out
@@ -151,6 +162,14 @@ with tab_query:
             st.chat_message("user").write(active["question"])
             if active.get("answer"):
                 st.chat_message("assistant").write(active["answer"])
+
+                # Show citations if the model referenced any sources
+                citations = extract_citations(active["answer"])
+                if citations:
+                    with st.expander("Sources cited", expanded=False):
+                        for c in citations[:10]:
+                            st.code(c, language=None)
+
             results = active.get("results", [])
 
             def _select(src: str, excerpt: str) -> None:

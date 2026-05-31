@@ -31,6 +31,16 @@ def _init_registry() -> None:
     _register(TelegramParser)
     _register(ObsidianMarkdownParser)
 
+    # Optional OCR support (only if user installed with [ocr] extra and tesseract is present)
+    try:
+        from src.ingest.parsers.ocr import OCRParser
+        ocr_instance = OCRParser()
+        if getattr(ocr_instance, "_ocr_available", False):
+            _register(OCRParser)
+            logger.info("OCR parser registered for image files")
+    except Exception:
+        pass  # OCR not available — this is fine
+
 
 def extract_documents(file_path: Path, fallback_text: str) -> List[ExtractedDocument]:
     """Use registered parser or wrap fallback plain text."""
