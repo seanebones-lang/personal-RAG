@@ -12,6 +12,8 @@ from src.ingest.parsers.eml import EmlParser
 from src.ingest.parsers.ics import IcsParser
 from src.ingest.parsers.mbox import MboxParser
 from src.ingest.parsers.obsidian import ObsidianMarkdownParser
+from src.ingest.parsers.pinboard import PinboardParser
+from src.ingest.parsers.raindrop import RaindropParser
 from src.ingest.parsers.telegram import TelegramParser
 
 logger = logging.getLogger(__name__)
@@ -34,6 +36,8 @@ def _init_registry() -> None:
     _register(ObsidianMarkdownParser)
     _register(IcsParser)  # Calendar data (.ics)
     _register(BookmarksHTMLParser)  # Chrome/Edge/Brave bookmark HTML exports
+    _register(RaindropParser)       # Raindrop.io JSON exports
+    _register(PinboardParser)       # Pinboard JSON exports
 
     # Optional OCR support (only if user installed with [ocr] extra and tesseract is present)
     try:

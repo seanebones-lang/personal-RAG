@@ -1,0 +1,15 @@
+[
+  {
+    "description": "PersonalRAGVault Repo",
+    "href": "https://github.com/seanebones-lang/personal-RAG",
+    "tags": "rag local-first",
+    "time": "2024-05-22T09:15:00Z",
+    "extended": "Great local RAG tool"
+  },
+  {
+    "description": "Interesting RAG Paper",
+    "href": "https://arxiv.org/abs/2305.18290",
+    "tags": "paper",
+    "time": "2024-05-23T11:45:00Z"
+  }
+]

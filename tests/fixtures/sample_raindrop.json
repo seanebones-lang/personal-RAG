@@ -1,0 +1,17 @@
+[
+  {
+    "_id": "abc123",
+    "link": "https://github.com/seanebones-lang/personal-RAG",
+    "title": "PersonalRAGVault",
+    "tags": ["rag", "local"],
+    "created": "2024-05-20T10:00:00Z",
+    "collection": { "title": "AI Tools" }
+  },
+  {
+    "link": "https://arxiv.org/abs/2305.18290",
+    "title": "RAG Survey Paper",
+    "tags": ["paper", "research"],
+    "created": "2024-05-21T14:30:00Z",
+    "collection": { "title": "Research" }
+  }
+]
