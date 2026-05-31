@@ -34,7 +34,7 @@ If this project helps you, consider starring the repo on GitHub.
 
 - `personalragvault doctor` — embedding dimension safety, Ollama health, large-vault advice
 - `personalragvault config edit` — proper TOML configuration with editor integration
-- **Streaming answers** in the CLI (token-by-token)
+- **Streaming answers** in both CLI and Streamlit UI (token-by-token)
 - Automatic citation extraction and display
 - Optional OCR: `pip install "personalragvault[ocr]"`
 - Real multi-turn conversations in the UI

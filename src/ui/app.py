@@ -136,9 +136,30 @@ with tab_query:
                     rerank=rerank,
                     parent_expand=parent_expand,
                     history=history,
+                    stream=not no_llm,  # Enable streaming when using LLM
                 )
-            add_turn(question, out.get("answer"), out["results"])
-            st.session_state.last_query_out = out
+
+            # Handle streaming LLM response
+            answer_stream = out.get("answer_stream")
+            if answer_stream and not no_llm:
+                # Stream the answer live into the UI
+                message_placeholder = st.empty()
+                full_answer = ""
+
+                for token in answer_stream:
+                    full_answer += token
+                    message_placeholder.markdown(full_answer + "▌")
+
+                message_placeholder.markdown(full_answer)
+
+                # Save the completed answer
+                add_turn(question, full_answer, out["results"])
+                st.session_state.last_query_out = {**out, "answer": full_answer}
+            else:
+                # Non-streaming path (retrieval only or error)
+                add_turn(question, out.get("answer"), out["results"])
+                st.session_state.last_query_out = out
+
         except Exception as exc:
             st.error(str(exc))
 
