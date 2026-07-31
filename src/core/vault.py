@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from src.config import get_settings
 from src.embed.embedder import (
@@ -16,7 +17,7 @@ from src.embed.embedder import (
 )
 from src.embed.presets import EMBED_PRESETS, preset_for_model
 from src.filters import build_where
-from src.ingest.pipeline import build_documents_from_folder
+from src.ingest.pipeline import build_documents_from_folder, iter_file_documents
 from src.ollama_client import (
     build_tagged_context,
     check_ollama_model,
@@ -31,6 +32,7 @@ from src.retrieval.multi_query import (
 )
 from src.retrieval.parent import expand_parent_chunks
 from src.retrieval.rerank import rerank_results
+from src.store.response_cache import get_response_cache, reset_response_cache
 from src.store.vectorstore import (
     compact_maintenance,
     count_documents,
@@ -43,7 +45,10 @@ from src.store.vectorstore import (
     set_collection_embed_dim,
     upsert_documents,
 )
-from src.store.response_cache import get_response_cache, cached_query
+
+logger = logging.getLogger(__name__)
+
+ProgressCallback = Optional[Callable[[str, int, int, Dict[str, Any]], None]]
 
 
 @dataclass
@@ -63,12 +68,17 @@ class StatusInfo:
     chunk_strategy: str
     hnsw_search_ef: int
     sidecar_stats: Dict[str, int]
+    response_cache_enabled: bool = False
+    response_cache_stats: Optional[Dict[str, int]] = None
 
 
 def get_status_info() -> StatusInfo:
     settings = get_settings()
     preset = preset_for_model(settings.embed_model)
     dim = get_collection_embed_dim()
+    cache_stats = None
+    if settings.response_cache_enabled:
+        cache_stats = get_response_cache().stats()
     return StatusInfo(
         chunk_count=count_documents(),
         db_path=str(settings.db_path),
@@ -85,7 +95,52 @@ def get_status_info() -> StatusInfo:
         chunk_strategy=settings.chunk_strategy,
         hnsw_search_ef=settings.hnsw_search_ef,
         sidecar_stats=get_sidecar_stats(),
+        response_cache_enabled=settings.response_cache_enabled,
+        response_cache_stats=cache_stats,
     )
+
+
+def preview_ingest(
+    path: Path,
+    recursive: bool = False,
+    allow_outside_home: bool = False,
+    force: bool = False,
+) -> Dict[str, Any]:
+    """Dry-run ingest: count files/chunks without embedding or writing."""
+    from src.ingest.ingest import discover_files, validate_ingest_path
+    from src.store.file_cache import should_skip_file
+
+    validated = validate_ingest_path(path, allow_outside_home=allow_outside_home)
+    files = discover_files(validated, recursive=recursive)
+    would_process = 0
+    would_skip = 0
+    estimated_chunks = 0
+    sample: List[str] = []
+
+    for file_path in files:
+        if should_skip_file(file_path, force=force):
+            would_skip += 1
+            continue
+        would_process += 1
+        if len(sample) < 12:
+            sample.append(str(file_path))
+        # Cheap estimate: ~chars/chunk_size without full parse cost for huge trees
+        try:
+            size = file_path.stat().st_size
+            settings = get_settings()
+            # rough text ratio + chunk_size
+            est = max(1, int((size * 0.6) / max(settings.chunk_size, 1)))
+            estimated_chunks += min(est, 5000)
+        except OSError:
+            estimated_chunks += 1
+
+    return {
+        "files_discovered": len(files),
+        "files_to_process": would_process,
+        "files_unchanged_skip": would_skip,
+        "estimated_chunks": estimated_chunks,
+        "sample_paths": sample,
+    }
 
 
 def run_ingest(
@@ -95,7 +150,10 @@ def run_ingest(
     force: bool = False,
     show_progress: bool = True,
     chunk_strategy: Optional[str] = None,
+    progress_callback: ProgressCallback = None,
+    batch_size: Optional[int] = None,
 ) -> int:
+    """Ingest folder with optional streaming batch upsert (large vault safe)."""
     from src.config import normalize_chunk_strategy
     from src.ingest.chunking.context import (
         reset_chunk_strategy_override,
@@ -103,37 +161,90 @@ def run_ingest(
     )
 
     ensure_embedding_compatible()
+    settings = get_settings()
+    batch = batch_size if batch_size is not None else settings.ingest_batch_size
+
     token = None
     if chunk_strategy:
         token = set_chunk_strategy_override(normalize_chunk_strategy(chunk_strategy))
+
+    total_chunks = 0
+    pending: List[Dict[str, Any]] = []
+    files_done = 0
+    files_total = 0
+
     try:
-        docs = build_documents_from_folder(
+        # Prefer streaming path for memory control
+        for file_path, file_docs, meta in iter_file_documents(
             path,
             recursive=recursive,
             allow_outside_home=allow_outside_home,
             force_reingest=force,
-        )
+        ):
+            files_total = meta.get("files_total", files_total)
+            files_done += 1
+            if progress_callback:
+                progress_callback(
+                    "file",
+                    files_done,
+                    max(files_total, files_done),
+                    {
+                        "path": str(file_path),
+                        "chunks": len(file_docs),
+                        "skipped": meta.get("skipped", False),
+                    },
+                )
+            if not file_docs:
+                continue
+
+            sources = list({str(d["metadata"]["source"]) for d in file_docs})
+            delete_by_sources(sources)
+            pending.extend(file_docs)
+
+            while len(pending) >= batch:
+                chunk = pending[:batch]
+                del pending[:batch]
+                _attach_embeddings(chunk, show_progress=show_progress and not progress_callback)
+                upsert_documents(chunk)
+                total_chunks += len(chunk)
+                if progress_callback:
+                    progress_callback(
+                        "embed_upsert",
+                        total_chunks,
+                        total_chunks + len(pending),
+                        {"batch": len(chunk)},
+                    )
+
+        if pending:
+            _attach_embeddings(pending, show_progress=show_progress and not progress_callback)
+            upsert_documents(pending)
+            total_chunks += len(pending)
+            if progress_callback:
+                progress_callback(
+                    "embed_upsert",
+                    total_chunks,
+                    total_chunks,
+                    {"batch": len(pending), "final": True},
+                )
     finally:
         if token is not None:
             reset_chunk_strategy_override(token)
-    if not docs:
-        return 0
 
-    sources = list({str(d["metadata"]["source"]) for d in docs})
-    delete_by_sources(sources)
-
-    _attach_embeddings(docs, show_progress=show_progress)
-
-    upsert_documents(docs)
-    set_collection_embed_dim(get_embedding_dimension())
-    return len(docs)
+    if total_chunks:
+        set_collection_embed_dim(get_embedding_dimension())
+        # Invalidate response cache after vault mutation
+        if settings.response_cache_enabled:
+            reset_response_cache()
+    return total_chunks
 
 
 def run_query(
     question: str,
-    top_k: int = 8,
-    max_distance: float = 0.8,
+    top_k: int = 5,
+    max_distance: Optional[float] = None,
     where: Optional[Dict[str, Any]] = None,
+    hybrid: bool = False,
+    use_llm: bool = True,
     multi_query: bool = False,
     expand_query: bool = False,
     rerank: bool = False,
@@ -141,28 +252,89 @@ def run_query(
     history: Optional[List[Tuple[str, str]]] = None,
     stream: bool = False,
 ) -> Dict[str, Any]:
-    if stream:
-        # don't cache streams
+    """Retrieve (+ optional LLM answer). Caches non-stream results when enabled."""
+    settings = get_settings()
+
+    # Streaming and multi-turn history: never cache
+    if stream or history:
         return _run_query_impl(
-            question, top_k, max_distance, where, multi_query, expand_query, rerank, parent_expand, history, stream
+            question,
+            top_k=top_k,
+            max_distance=max_distance,
+            where=where,
+            hybrid=hybrid,
+            use_llm=use_llm,
+            multi_query=multi_query,
+            expand_query=expand_query,
+            rerank=rerank,
+            parent_expand=parent_expand,
+            history=history,
+            stream=stream,
         )
+
+    if not settings.response_cache_enabled:
+        return _run_query_impl(
+            question,
+            top_k=top_k,
+            max_distance=max_distance,
+            where=where,
+            hybrid=hybrid,
+            use_llm=use_llm,
+            multi_query=multi_query,
+            expand_query=expand_query,
+            rerank=rerank,
+            parent_expand=parent_expand,
+            history=history,
+            stream=stream,
+        )
+
     cache = get_response_cache()
-    key_kwargs = {"top_k": top_k, "multi": multi_query, "rerank": rerank}
+    key_kwargs = {
+        "top_k": top_k,
+        "max_distance": max_distance,
+        "hybrid": hybrid,
+        "use_llm": use_llm,
+        "multi": multi_query,
+        "expand": expand_query,
+        "rerank": rerank,
+        "parent": parent_expand,
+        "where": where,
+    }
     cached = cache.get(question, **key_kwargs)
     if cached is not None:
-        return cached
+        out = dict(cached)
+        out["cached"] = True
+        return out
+
     result = _run_query_impl(
-        question, top_k, max_distance, where, multi_query, expand_query, rerank, parent_expand, history, stream
+        question,
+        top_k=top_k,
+        max_distance=max_distance,
+        where=where,
+        hybrid=hybrid,
+        use_llm=use_llm,
+        multi_query=multi_query,
+        expand_query=expand_query,
+        rerank=rerank,
+        parent_expand=parent_expand,
+        history=history,
+        stream=stream,
     )
-    cache.set(question, result, **key_kwargs)
+    # Do not cache generators or errors that might be transient
+    if result.get("answer_stream") is None and result.get("llm_error") is None:
+        to_store = {k: v for k, v in result.items() if k != "answer_stream"}
+        cache.set(question, to_store, **key_kwargs)
+    result["cached"] = False
     return result
 
 
 def _run_query_impl(
     question: str,
-    top_k: int = 8,
-    max_distance: float = 0.8,
+    top_k: int = 5,
+    max_distance: Optional[float] = None,
     where: Optional[Dict[str, Any]] = None,
+    hybrid: bool = False,
+    use_llm: bool = True,
     multi_query: bool = False,
     expand_query: bool = False,
     rerank: bool = False,
@@ -175,8 +347,6 @@ def _run_query_impl(
     use_expand = expand_query or settings.expand_query_ollama
     use_rerank = rerank or settings.rerank
     use_parent = parent_expand or settings.parent_expand
-
-    t0 = time.perf_counter()
 
     t0 = time.perf_counter()
 
@@ -228,7 +398,6 @@ def _run_query_impl(
 
     retrieval_time = time.perf_counter() - t0
 
-    # Use tagged + lightly compressed context for much better grounding + citations
     context = build_tagged_context(results, settings.max_context_chars, compress=True)
 
     answer = None
@@ -249,7 +418,6 @@ def _run_query_impl(
             )
 
             if stream:
-                # Return a generator the caller can iterate for token-by-token streaming
                 answer_stream = generate_answer_stream(prompt, history=history)
             else:
                 t_gen = time.perf_counter()
@@ -271,6 +439,7 @@ def _run_query_impl(
             "generation": round(generation_time, 3) if generation_time > 0 else None,
             "total": round(total_time, 3),
         },
+        "cached": False,
     }
 
 
@@ -303,6 +472,7 @@ def _attach_embeddings(docs: List[Dict[str, Any]], show_progress: bool = True) -
 
 def run_purge() -> None:
     purge_collection()
+    reset_response_cache()
 
 
 def run_compact() -> Dict[str, int]:
@@ -378,3 +548,20 @@ def list_embed_presets() -> List[Dict[str, Any]]:
         }
         for p in EMBED_PRESETS.values()
     ]
+
+
+# Keep build_documents_from_folder import used by tests/scripts that monkeypatch vault
+__all__ = [
+    "StatusInfo",
+    "get_status_info",
+    "preview_ingest",
+    "run_ingest",
+    "run_query",
+    "run_purge",
+    "run_compact",
+    "highlight_excerpt",
+    "preview_source",
+    "build_where_from_options",
+    "list_embed_presets",
+    "build_documents_from_folder",
+]

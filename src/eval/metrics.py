@@ -84,7 +84,9 @@ def precision_at_k(results: List[Dict[str, Any]], expected_source_contains: str,
     relevant = sum(1 for s in rels if s > 0)
     return relevant / len(rels)
 
-def average_precision(results: List[Dict[str, Any]], expected_source_contains: str, k: int) -> float:
+def average_precision(
+    results: List[Dict[str, Any]], expected_source_contains: str, k: int
+) -> float:
     """AP@k approximation for single relevant (simplified MAP when 1 relevant)."""
     rels = relevance_scores(results, expected_source_contains, k)
     if not any(rels):
@@ -96,6 +98,7 @@ def average_precision(results: List[Dict[str, Any]], expected_source_contains: s
             num_relevant += 1
             precisions.append(num_relevant / i)
     return sum(precisions) / num_relevant if precisions else 0.0
+
 
 def context_relevance(results: List[Dict[str, Any]], query: str, k: int = 3) -> float:
     """Simple heuristic context relevance: overlap of query terms in top results."""
@@ -109,9 +112,17 @@ def context_relevance(results: List[Dict[str, Any]], query: str, k: int = 3) -> 
         scores.append(overlap)
     return sum(scores) / len(scores) if scores else 0.0
 
+
 def aggregate(results: List[EvalResult]) -> Dict[str, float]:
     if not results:
-        return {"hit_at_k": 0.0, "mrr": 0.0, "ndcg_at_k": 0.0, "precision_at_k": 0.0, "map": 0.0, "count": 0}
+        return {
+            "hit_at_k": 0.0,
+            "mrr": 0.0,
+            "ndcg_at_k": 0.0,
+            "precision_at_k": 0.0,
+            "map": 0.0,
+            "count": 0,
+        }
     n = len(results)
     hits = sum(1 for r in results if r.hit)
     mrr = sum(r.reciprocal_rank for r in results) / n

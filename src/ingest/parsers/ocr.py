@@ -65,10 +65,16 @@ class OCRParser(BaseParser):
 
             text = pytesseract.image_to_string(img)
             if text.strip():
-                return [ExtractedDocument(
-                    text=text.strip(),
-                    extra_metadata={"ocr": True, "format": file_path.suffix.lower(), "preprocessed": True}
-                )]
+                return [
+                    ExtractedDocument(
+                        text=text.strip(),
+                        extra_metadata={
+                            "ocr": True,
+                            "format": file_path.suffix.lower(),
+                            "preprocessed": True,
+                        },
+                    )
+                ]
         except Exception as exc:
             logger.warning("OCR extraction failed for %s: %s", file_path, exc)
 

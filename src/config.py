@@ -115,6 +115,10 @@ class Settings:
     rerank_candidates: int
     rerank_model: str
     parent_expand: bool
+    response_cache_enabled: bool
+    response_cache_ttl: int
+    response_cache_max_size: int
+    ingest_batch_size: int
     collection_name: str = "personal_knowledge"
 
     @classmethod
@@ -176,6 +180,10 @@ class Settings:
                 resolve_reranker_model(os.environ.get("PRV_RERANK_PRESET")),
             ),
             parent_expand=_bool_env("PRV_PARENT_EXPAND", False),
+            response_cache_enabled=_bool_env("PRV_RESPONSE_CACHE", True),
+            response_cache_ttl=_int_env("PRV_RESPONSE_CACHE_TTL", 3600, minimum=1),
+            response_cache_max_size=_int_env("PRV_RESPONSE_CACHE_MAX", 1000, minimum=1),
+            ingest_batch_size=_int_env("PRV_INGEST_BATCH_SIZE", 500, minimum=10),
         )
 
 

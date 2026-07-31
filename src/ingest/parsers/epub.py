@@ -22,9 +22,9 @@ class EpubParser(BaseParser):
 
     def extract(self, file_path: Path) -> List[ExtractedDocument]:
         try:
+            from bs4 import BeautifulSoup
             from ebooklib import epub
             from ebooklib.utils import get_body_content
-            from bs4 import BeautifulSoup
 
             book = epub.read_epub(str(file_path))
             texts = []
@@ -75,7 +75,12 @@ class EpubParser(BaseParser):
                             continue
             full = "\n\n".join(texts)
             if full.strip():
-                return [ExtractedDocument(text=full.strip(), extra_metadata={"format": "epub", "fallback": True})]
+                return [
+                    ExtractedDocument(
+                        text=full.strip(),
+                        extra_metadata={"format": "epub", "fallback": True},
+                    )
+                ]
         except Exception as exc:
             logger.warning("Fallback EPUB extraction failed for %s: %s", file_path, exc)
 

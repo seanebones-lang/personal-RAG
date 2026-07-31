@@ -27,4 +27,13 @@ personalragvault reindex ~/Documents/MyVault --yes
 
 ## Wikilinks
 
-`[[wikilink]]` resolution is not automated in v0.3; links remain as plain text in chunks.
+From v1.3, `[[wikilink]]` and `![[embed]]` targets are extracted into metadata:
+
+- `wikilinks` — comma-separated note names (alias/heading stripped)
+- `wikilink_count` — integer edge count
+
+Links still appear as plain text inside chunks (no graph DB yet). You can filter with:
+
+```bash
+personalragvault query "related notes" --filter '{"wikilink_count": {"$gte": 1}}'
+```

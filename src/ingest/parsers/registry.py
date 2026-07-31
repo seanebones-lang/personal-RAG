@@ -9,6 +9,7 @@ from typing import Dict, List, Type
 from src.ingest.parsers.base import BaseParser, ExtractedDocument
 from src.ingest.parsers.bookmarks import BookmarksHTMLParser
 from src.ingest.parsers.eml import EmlParser
+from src.ingest.parsers.epub import EpubParser
 from src.ingest.parsers.ics import IcsParser
 from src.ingest.parsers.mbox import MboxParser
 from src.ingest.parsers.notion import NotionParser
@@ -17,7 +18,6 @@ from src.ingest.parsers.pinboard import PinboardParser
 from src.ingest.parsers.raindrop import RaindropParser
 from src.ingest.parsers.telegram import TelegramParser
 from src.ingest.parsers.whatsapp import WhatsAppParser
-from src.ingest.parsers.epub import EpubParser
 
 logger = logging.getLogger(__name__)
 

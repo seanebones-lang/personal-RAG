@@ -34,11 +34,13 @@ If this project helps you, consider starring the repo on GitHub.
 
 - `personalragvault doctor` — embedding dimension safety, Ollama health, large-vault advice
 - `personalragvault config edit` — proper TOML configuration with editor integration
-- **Streaming answers** in both CLI and Streamlit UI (token-by-token)
+- `personalragvault serve` — local FastAPI API for agents/tools
+- Streaming batch ingest + `--dry-run` for large vaults
+- Streaming answers in both CLI and Streamlit UI (token-by-token)
 - Automatic citation extraction and display
 - Optional OCR: `pip install "personalragvault[ocr]"`
 - Real multi-turn conversations in the UI
-- Query timing breakdown
+- Query timing breakdown + optional response cache
 
 ## Quick start
 
@@ -147,10 +149,12 @@ Screenshots live in [docs/assets/screenshots/](docs/assets/screenshots/). See [d
 ## Commands (summary)
 
 ```bash
-personalragvault ingest PATH [--recursive] [--verbose]
-personalragvault query "QUESTION" [--no-llm] [--top-k N]
+personalragvault ingest PATH [--recursive] [--dry-run] [--verbose]
+personalragvault query "QUESTION" [--no-llm] [--top-k N] [--hybrid]
+personalragvault serve [--port 8765]
 personalragvault watch PATH
 personalragvault status
+personalragvault doctor
 personalragvault purge [--yes]
 personalragvault reindex PATH [--yes]
 ```

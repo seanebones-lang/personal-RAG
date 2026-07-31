@@ -62,22 +62,57 @@ def embed_texts(texts: List[str], show_progress: bool = True) -> np.ndarray:
     settings = get_settings()
     model = get_model()
     batch_size = settings.embed_batch_size
-    if len(texts) <= batch_size:
+    n = len(texts)
+    if n <= batch_size:
         return model.encode(
             texts,
             show_progress_bar=show_progress,
             convert_to_numpy=True,
         )
-    parts: List[np.ndarray] = []
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i : i + batch_size]
-        parts.append(
-            model.encode(
-                batch,
-                show_progress_bar=show_progress and i == 0,
-                convert_to_numpy=True,
+
+    # Rich multi-batch progress when available; falls back to ST bar on first batch
+    use_rich = False
+    progress = None
+    task_id = None
+    if show_progress:
+        try:
+            from rich.progress import (
+                BarColumn,
+                MofNCompleteColumn,
+                Progress,
+                TextColumn,
+                TimeRemainingColumn,
             )
-        )
+
+            progress = Progress(
+                TextColumn("[bold blue]Embedding"),
+                BarColumn(),
+                MofNCompleteColumn(),
+                TimeRemainingColumn(),
+                transient=True,
+            )
+            progress.start()
+            task_id = progress.add_task("embed", total=n)
+            use_rich = True
+        except Exception:
+            use_rich = False
+
+    parts: List[np.ndarray] = []
+    try:
+        for i in range(0, n, batch_size):
+            batch = texts[i : i + batch_size]
+            parts.append(
+                model.encode(
+                    batch,
+                    show_progress_bar=show_progress and not use_rich and i == 0,
+                    convert_to_numpy=True,
+                )
+            )
+            if use_rich and progress is not None and task_id is not None:
+                progress.update(task_id, advance=len(batch))
+    finally:
+        if use_rich and progress is not None:
+            progress.stop()
     return np.vstack(parts)
 
 

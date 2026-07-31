@@ -6,6 +6,7 @@ import pytest
 
 from src.config import reset_settings
 from src.embed.embedder import reset_model
+from src.store.response_cache import reset_response_cache
 from src.store.vectorstore import reset_client
 
 
@@ -19,10 +20,13 @@ def isolated_settings(monkeypatch: pytest.MonkeyPatch, tmp_path):
     monkeypatch.setenv("PRV_USE_FILE_CACHE", "false")
     monkeypatch.setenv("PRV_USE_FTS", "false")
     monkeypatch.setenv("PRV_USE_EMBEDDING_CACHE", "false")
+    monkeypatch.setenv("PRV_RESPONSE_CACHE", "false")
     reset_settings()
     reset_client()
     reset_model()
+    reset_response_cache()
     yield
     reset_settings()
     reset_client()
     reset_model()
+    reset_response_cache()

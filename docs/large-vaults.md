@@ -199,6 +199,37 @@ Pay attention to:
 
 If you have real-world numbers (chunk count, typical query latency, data sources) from a large vault, we would love to hear about them in the issues — they help improve this guidance for everyone.
 
+## Ingesting large vaults
+
+Query tuning is half the story. Ingest used to load every chunk into memory before embedding — that OOM'd on 50k+ chunk runs.
+
+### Streaming batch path (v1.3+)
+
+Ingest now processes **per file → embed → upsert** in batches controlled by:
+
+```bash
+export PRV_INGEST_BATCH_SIZE=500   # chunks per embed+upsert wave (default 500)
+```
+
+CLI shows Rich progress for files and chunks. Prefer:
+
+```bash
+# Preview first
+personalragvault ingest ~/Documents/Vault --recursive --dry-run
+
+# Then real run
+personalragvault ingest ~/Documents/Vault --recursive
+personalragvault compact
+personalragvault doctor
+```
+
+### Tips
+
+- Keep `PRV_USE_FILE_CACHE=true` so re-runs skip unchanged files
+- Prefer `char` or `prose` chunking for first full ingest; save `semantic_embed` for curated subsets
+- After >15k new chunks, run `compact` and consider lowering `PRV_HYBRID_FETCH_LIMIT`
+- Response cache (`PRV_RESPONSE_CACHE`) is cleared automatically after successful ingest
+
 ## Benchmarks & Measurements (2026)
 
 All numbers below were measured on an Apple M2 MacBook Pro (16 GB unified memory) using the built-in benchmarking script (`python scripts/benchmark.py`).

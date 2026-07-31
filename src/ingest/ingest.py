@@ -30,11 +30,7 @@ SUPPORTED_EXTENSIONS: Set[str] = {
     ".eml",
     ".mbox",
     ".ics",  # Calendar data (iCalendar)
-    # Browser bookmarks (detected by content + extension)
-    ".html",
-    ".htm",
-    # Messaging exports
-    ".txt",  # WhatsApp, etc.
+    ".epub",  # E-books
 }
 
 

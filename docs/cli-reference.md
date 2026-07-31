@@ -31,12 +31,17 @@ personalragvault ingest PATH [options]
 |--------|-------------|
 | `--recursive` / `-r` | Scan subdirectories |
 | `--allow-outside-home` | Allow paths outside `$HOME` |
+| `--force` | Re-ingest even if file cache says unchanged |
 | `--chunk-strategy` | Override `PRV_CHUNK_STRATEGY` for this ingest |
+| `--dry-run` | Count files + estimate chunks; no embed/write |
+
+Ingest streams file → embed → upsert batches (`PRV_INGEST_BATCH_SIZE`, default 500) with Rich progress.
 
 **Example:**
 
 ```bash
 personalragvault ingest ~/Downloads -r --verbose
+personalragvault ingest ~/Documents/Vault --recursive --dry-run
 ```
 
 ---
@@ -168,11 +173,33 @@ personalragvault reindex PATH [--recursive] [--allow-outside-home] [--yes]
 
 ---
 
+## `ui`
+
+Local Streamlit UI on `127.0.0.1` (requires `[ui]` extra).
+
+```bash
+personalragvault ui [--port 8501]
+```
+
+---
+
+## `serve`
+
+Local FastAPI HTTP API (localhost by default). Endpoints: `GET /health`, `GET /status`, `POST /query`, `POST /ingest`, `GET /cache/stats`, `POST /cache/clear`.
+
+```bash
+personalragvault serve [--host 127.0.0.1] [--port 8765] [--reload]
+```
+
+Do not bind to `0.0.0.0` without authentication — the vault is private by design.
+
+---
+
 ## Supported file extensions
 
-Defined in `src/ingest/ingest.py`:
+Defined in `src/ingest/ingest.py` + parser registry:
 
-`.txt`, `.md`, `.pdf`, `.json`, `.docx`, `.py`, `.js`, `.ts`, `.html`, `.htm`, `.csv`, `.xml`, `.yaml`, `.yml`, `.rst`, `.eml`, `.mbox`
+`.txt`, `.md`, `.pdf`, `.json`, `.docx`, `.py`, `.js`, `.ts`, `.html`, `.htm`, `.csv`, `.xml`, `.yaml`, `.yml`, `.rst`, `.eml`, `.mbox`, `.ics`, `.epub`, plus WhatsApp/Notion/bookmark exports and optional OCR images.
 
 Telegram exports (`result.json`) and Obsidian `.md` notes use dedicated parsers — see [sources/](sources/).
 
@@ -183,3 +210,4 @@ Telegram exports (`result.json`) and Obsidian `.md` notes use dedicated parsers 
 - [Getting started](getting-started.md)
 - [Configuration](configuration.md)
 - [FAQ](faq.md)
+- [Large vaults](large-vaults.md)

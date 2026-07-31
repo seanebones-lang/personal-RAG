@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-07-31
+
+### Fixed
+- **Critical:** `run_query` dropped `hybrid` / `use_llm` parameters after response-cache wiring — CLI, UI, eval, and benchmarks would crash or mis-route retrieval
+- Cache keys now include hybrid, filters, rerank, parent-expand, and max_distance (not just top_k)
+
+### Added
+- `personalragvault serve` — local FastAPI HTTP API (`/health`, `/status`, `/query`, `/ingest`, `/cache/*`)
+- Streaming batch ingest: per-file process → embed → upsert (`PRV_INGEST_BATCH_SIZE`)
+- `ingest --dry-run` file/chunk estimates without writing
+- Rich progress for multi-batch embedding and CLI ingest
+- Query response cache (`PRV_RESPONSE_CACHE`, TTL, max size); invalidated on ingest/purge
+- EPUB parser (optional `ebooklib`+bs4; stdlib zip/html fallback)
+- Obsidian wikilink extraction (`wikilinks`, `wikilink_count` metadata)
+- Tests: API, response cache, EPUB, wikilinks; pytest `pythonpath`; pytest-cov + httpx dev deps
+
+### Improved
+- Large vaults guide: ingest streaming section
+- CLI `status` shows response cache stats
+- Docs: CLI reference, roadmap, Obsidian source guide, `.env.example`
+
 ## [1.2.0] - 2026-06-02
 
 ### Added

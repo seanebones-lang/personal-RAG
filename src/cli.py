@@ -16,6 +16,7 @@ from src.core.vault import (
     build_where_from_options,
     get_status_info,
     list_embed_presets,
+    preview_ingest,
     run_compact,
     run_ingest,
     run_purge,
@@ -91,22 +92,101 @@ def ingest(
         "--chunk-strategy",
         help="Override PRV_CHUNK_STRATEGY for this ingest only (warning: semantic_embed is slow)",
     ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Preview files/chunk estimate without embedding or writing",
+    ),
 ) -> None:
     """Ingest supported files from a directory."""
+    if dry_run:
+        try:
+            preview = preview_ingest(
+                path,
+                recursive=recursive,
+                allow_outside_home=allow_outside_home,
+                force=force,
+            )
+        except (FileNotFoundError, NotADirectoryError, ValueError) as exc:
+            _stderr.print(f"[red]Error:[/red] {exc}")
+            raise typer.Exit(code=2) from exc
+        console.print("[bold cyan]Ingest dry-run[/bold cyan]")
+        console.print(f"  Files discovered: {preview['files_discovered']}")
+        console.print(f"  Would process:    {preview['files_to_process']}")
+        console.print(f"  Unchanged skip:   {preview['files_unchanged_skip']}")
+        console.print(f"  Est. chunks:      ~{preview['estimated_chunks']}")
+        if preview["sample_paths"]:
+            console.print("  Sample paths:")
+            for p in preview["sample_paths"]:
+                console.print(f"    • {p}")
+        return
+
     if not _quiet:
         console.print(f"[bold green]Scanning[/bold green] {path}")
+
+    progress = None
+    file_task = None
+    chunk_task = None
+    if not _quiet:
+        try:
+            from rich.progress import (
+                BarColumn,
+                MofNCompleteColumn,
+                Progress,
+                SpinnerColumn,
+                TextColumn,
+                TimeElapsedColumn,
+            )
+
+            progress = Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                MofNCompleteColumn(),
+                TimeElapsedColumn(),
+                console=console,
+                transient=False,
+            )
+            progress.start()
+            file_task = progress.add_task("Files", total=None)
+            chunk_task = progress.add_task("Chunks upserted", total=None)
+        except Exception:
+            progress = None
+
+    def _on_progress(stage: str, current: int, total: int, meta: dict) -> None:
+        if progress is None:
+            return
+        if stage == "file" and file_task is not None:
+            if total:
+                progress.update(
+                    file_task,
+                    completed=current,
+                    total=total,
+                    description=f"Files ({meta.get('path', '')[-40:]})",
+                )
+            else:
+                progress.update(file_task, completed=current)
+        elif stage == "embed_upsert" and chunk_task is not None:
+            progress.update(chunk_task, completed=current, total=max(total, current))
+
     try:
         count = run_ingest(
             path,
             recursive=recursive,
             allow_outside_home=allow_outside_home,
             force=force,
-            show_progress=not _quiet,
+            show_progress=not _quiet and progress is None,
             chunk_strategy=chunk_strategy,
+            progress_callback=_on_progress if progress is not None else None,
         )
     except (FileNotFoundError, NotADirectoryError, ValueError) as exc:
+        if progress is not None:
+            progress.stop()
         _stderr.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=2) from exc
+    finally:
+        if progress is not None:
+            progress.stop()
 
     if count == 0:
         if not _quiet:
@@ -114,6 +194,11 @@ def ingest(
         raise typer.Exit(code=1)
     if not _quiet:
         console.print(f"[bold green]Ingestion complete.[/bold green] ({count} chunks)")
+        if count > 15000:
+            console.print(
+                "[dim]Large vault tip: run `personalragvault compact` "
+                "and see docs/large-vaults.md[/dim]"
+            )
     if chunk_strategy and "semantic_embed" in str(chunk_strategy).lower():
         console.print(
             "[yellow]Note: semantic_embed chunking was used. This is high-quality but CPU-heavy. "
@@ -426,10 +511,15 @@ def status() -> None:
     console.print(f"  Chunk strategy: {info.chunk_strategy}")
     console.print(f"  Chunk size / overlap: {info.chunk_size} / {info.chunk_overlap}")
     console.print(f"  HNSW search_ef: {info.hnsw_search_ef}")
-    console.print(
-        f"  Caches: file={info.use_file_cache} fts={info.use_fts} "
-        f"embed={info.use_embedding_cache}"
+    console.print(f"  Caches: file={info.use_file_cache} fts={info.use_fts} "
+        f"embed={info.use_embedding_cache} response={info.response_cache_enabled}"
     )
+    if info.response_cache_stats:
+        s = info.response_cache_stats
+        console.print(
+            f"  Response cache: hits={s.get('hits', 0)} misses={s.get('misses', 0)} "
+            f"size={s.get('size', 0)}"
+        )
     if info.chunk_count > 5000:
         console.print(
             "[yellow]  Tip: large vault — try --hybrid and "
@@ -658,6 +748,30 @@ def ui(
         str(port),
     ]
     stcli.main()
+
+
+@app.command()
+def serve(
+    host: str = typer.Option("127.0.0.1", "--host", help="Bind address (default localhost only)"),
+    port: int = typer.Option(8765, "--port", help="HTTP port"),
+    reload: bool = typer.Option(False, "--reload", help="Dev auto-reload"),
+) -> None:
+    """Run local FastAPI HTTP API (query/ingest/status). Localhost by default."""
+    if host not in ("127.0.0.1", "localhost", "::1") and not _quiet:
+        console.print(
+            "[yellow]Warning: binding outside localhost exposes your vault. "
+            "Add auth before network use.[/yellow]"
+        )
+    try:
+        import uvicorn
+    except ImportError as exc:
+        _stderr.print("[red]uvicorn not installed.[/red] Reinstall package deps.")
+        raise typer.Exit(code=1) from exc
+
+    if not _quiet:
+        console.print(f"[bold green]API[/bold green] http://{host}:{port}")
+        console.print("  POST /query  POST /ingest  GET /status  GET /health")
+    uvicorn.run("src.query.api:app", host=host, port=port, reload=reload, log_level="info")
 
 
 def main_entry() -> None:
