@@ -454,6 +454,14 @@ def doctor() -> None:
         if r.detail:
             console.print(f"    [dim]{r.detail}[/dim]")
 
+    # First-time setup guidance
+    if info.chunk_count == 0:
+        console.print("\n[bold yellow]First-time setup tips:[/bold yellow]")
+        console.print("  1. Pull a model:  ollama pull qwen3-coder:30b  (or llama3.2)")
+        console.print("  2. Set model:     export PRV_OLLAMA_MODEL=qwen3-coder:30b")
+        console.print("  3. Ingest data:   personalragvault ingest ~/Documents --recursive")
+        console.print("  4. Launch UI:     personalragvault ui")
+
     # Large vault tips
     tips = check_large_vault_recommendations(info.chunk_count)
     if tips:
