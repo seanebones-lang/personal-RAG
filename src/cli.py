@@ -661,6 +661,8 @@ def ui(
 
 
 def main_entry() -> None:
+    import warnings
+    warnings.filterwarnings("ignore", message="capture() takes")
     app()
 
 
