@@ -25,9 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Version bumped to 1.2.0 to reflect the substantial increase in personal data source coverage and UX improvements.
-- Reranking discoverability (better hints in `models list` and configuration)
-- Demo / community contribution section in README
-- Large Vaults guide now includes real benchmark numbers (query latency, ingestion throughput, memory) measured on Apple Silicon
 
 ## [1.1.0] - 2026-06-01
 

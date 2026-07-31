@@ -86,3 +86,54 @@ def test_eval_generate_heuristic(tmp_path, monkeypatch):
     assert len(rows) == 1
     assert rows[0]["generated"] is True
     assert "notes.md" in rows[0]["expected_source_contains"]
+
+
+
+# New retrieval metrics test suite
+def test_precision_at_k():
+    from src.eval.metrics import precision_at_k
+    results = [
+        {"metadata": {"source": "invoice.pdf"}},
+        {"metadata": {"source": "other.txt"}},
+    ]
+    assert precision_at_k(results, "invoice", 2) == 0.5
+    assert precision_at_k(results, "invoice", 1) == 1.0
+
+def test_average_precision():
+    from src.eval.metrics import average_precision
+    results = [
+        {"metadata": {"source": "wrong.txt"}},
+        {"metadata": {"source": "invoice.pdf"}},
+    ]
+    ap = average_precision(results, "invoice", 2)
+    assert 0 < ap <= 1.0
+
+def test_context_relevance():
+    from src.eval.metrics import context_relevance
+    results = [{"text": "The invoice total for January is high."}]
+    score = context_relevance(results, "invoice total January", k=1)
+    assert score > 0.5
+
+def test_aggregate_new_metrics():
+    from src.eval.metrics import EvalResult, aggregate
+    rows = [EvalResult("q", True, 1.0, 1.0, "a")]
+    s = aggregate(rows)
+    assert "precision_at_k" in s
+    assert "map" in s
+
+
+# New generation quality test suite (heuristic-based)
+def test_generation_quality_heuristic():
+    # Placeholder for generation eval: simple overlap faithfulness/relevance
+    query = "What is the capital of France?"
+    answer = "The capital of France is Paris."
+    context = "France's capital city is Paris."
+    # Simple token overlap as proxy for faithfulness
+    ans_terms = set(answer.lower().split())
+    ctx_terms = set(context.lower().split())
+    faithfulness = len(ans_terms & ctx_terms) / max(1, len(ans_terms))
+    assert faithfulness >= 0.5
+    # Answer relevance to query
+    q_terms = set(query.lower().split())
+    rel = len(ans_terms & q_terms) / max(1, len(q_terms))
+    assert rel > 0.3

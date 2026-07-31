@@ -17,6 +17,7 @@ from src.ingest.parsers.pinboard import PinboardParser
 from src.ingest.parsers.raindrop import RaindropParser
 from src.ingest.parsers.telegram import TelegramParser
 from src.ingest.parsers.whatsapp import WhatsAppParser
+from src.ingest.parsers.epub import EpubParser
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,7 @@ def _init_registry() -> None:
     _register(PinboardParser)       # Pinboard JSON exports
     _register(WhatsAppParser)       # WhatsApp chat exports (very common personal data)
     _register(NotionParser)         # Notion Markdown exports
+    _register(EpubParser)           # EPUB e-books
 
     # Optional OCR support (only if user installed with [ocr] extra and tesseract is present)
     try:

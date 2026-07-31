@@ -43,6 +43,7 @@ from src.store.vectorstore import (
     set_collection_embed_dim,
     upsert_documents,
 )
+from src.store.response_cache import get_response_cache, cached_query
 
 
 @dataclass
@@ -130,11 +131,38 @@ def run_ingest(
 
 def run_query(
     question: str,
-    top_k: int = 5,
-    max_distance: Optional[float] = None,
+    top_k: int = 8,
+    max_distance: float = 0.8,
     where: Optional[Dict[str, Any]] = None,
-    hybrid: bool = False,
-    use_llm: bool = True,
+    multi_query: bool = False,
+    expand_query: bool = False,
+    rerank: bool = False,
+    parent_expand: bool = False,
+    history: Optional[List[Tuple[str, str]]] = None,
+    stream: bool = False,
+) -> Dict[str, Any]:
+    if stream:
+        # don't cache streams
+        return _run_query_impl(
+            question, top_k, max_distance, where, multi_query, expand_query, rerank, parent_expand, history, stream
+        )
+    cache = get_response_cache()
+    key_kwargs = {"top_k": top_k, "multi": multi_query, "rerank": rerank}
+    cached = cache.get(question, **key_kwargs)
+    if cached is not None:
+        return cached
+    result = _run_query_impl(
+        question, top_k, max_distance, where, multi_query, expand_query, rerank, parent_expand, history, stream
+    )
+    cache.set(question, result, **key_kwargs)
+    return result
+
+
+def _run_query_impl(
+    question: str,
+    top_k: int = 8,
+    max_distance: float = 0.8,
+    where: Optional[Dict[str, Any]] = None,
     multi_query: bool = False,
     expand_query: bool = False,
     rerank: bool = False,
@@ -147,6 +175,8 @@ def run_query(
     use_expand = expand_query or settings.expand_query_ollama
     use_rerank = rerank or settings.rerank
     use_parent = parent_expand or settings.parent_expand
+
+    t0 = time.perf_counter()
 
     t0 = time.perf_counter()
 
