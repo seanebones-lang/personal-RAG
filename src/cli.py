@@ -829,8 +829,18 @@ def serve(
 
 
 def main_entry() -> None:
+    import logging
     import warnings
+
     warnings.filterwarnings("ignore", message="capture() takes")
+    # Chroma may still log telemetry failures even when disabled
+    for name in (
+        "chromadb.telemetry",
+        "chromadb.telemetry.product.posthog",
+        "posthog",
+    ):
+        logging.getLogger(name).setLevel(logging.CRITICAL)
+        logging.getLogger(name).disabled = True
     app()
 
 

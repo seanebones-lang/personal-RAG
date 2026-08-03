@@ -200,7 +200,7 @@ personalragvault reindex PATH [--recursive] [--allow-outside-home] [--yes]
 
 Local FastAPI HTTP API (localhost by default).
 
-**Endpoints:** `GET /health`, `GET /status`, `GET /version` (package version), `POST /query`, `POST /ingest`, `GET /cache/stats`, `POST /cache/clear`. OpenAPI UI: `http://HOST:PORT/docs`.
+**Endpoints:** `GET /health`, `GET /status`, `GET /version` (package version), `POST /query`, `POST /ingest`, `GET /graph/neighbors?note=…`, `GET /cache/stats`, `POST /cache/clear`. OpenAPI UI: `http://HOST:PORT/docs`.
 
 ```bash
 personalragvault serve [--host 127.0.0.1] [--port 8765] [--reload]
@@ -228,6 +228,15 @@ curl -s -H "Authorization: Bearer change-me" \
   -H "Content-Type: application/json" \
   -d '{"question":"hello","use_llm":false}' \
   http://127.0.0.1:8765/query
+```
+
+## `graph`
+
+Wikilink neighbors from vault metadata (Obsidian-style `[[links]]`).
+
+```bash
+personalragvault graph NOTE [--direction both|out|in]
+personalragvault graph --export-edges edges.json
 ```
 
 ---

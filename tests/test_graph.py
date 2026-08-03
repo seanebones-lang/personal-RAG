@@ -41,7 +41,7 @@ def test_neighbors_out_and_in(monkeypatch):
     assert both["notes_indexed"] == 3
 
 
-def test_export_edges(monkeypatch):
+def test_export_edges(monkeypatch, tmp_path):
     corpus = [
         {
             "id": "1",
@@ -58,3 +58,8 @@ def test_export_edges(monkeypatch):
     edges = graph.export_edges()
     assert {"from": "A", "to": "B"} in edges
     assert {"from": "B", "to": "A"} in edges
+    out = tmp_path / "edges.json"
+    n = graph.export_edges_json(out)
+    assert n == 2
+    assert out.exists()
+    assert "edges" in out.read_text(encoding="utf-8")

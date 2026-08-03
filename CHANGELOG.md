@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-08-03
+
+### Fixed
+- Quieter Chroma/PostHog telemetry: force-disable + silence loggers (reduces `capture()` spam)
+
+### Added
+- API `GET /graph/neighbors` (same wikilink graph as CLI)
+- Tests: hybrid env default on CLI, graph CLI, graph API, edge export JSON
+
+### Improved
+- README features section for v1.4
+
 ## [1.4.0] - 2026-08-03
 
 ### Added

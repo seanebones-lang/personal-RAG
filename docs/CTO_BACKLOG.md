@@ -48,3 +48,10 @@ Execution source of truth. Update checkboxes on ship. **v1.4.0** swarm ship 2026
 - [x] Unit suite green; ruff clean
 - [x] Roadmap/CHANGELOG honest; version **1.4.0**
 - Residual: ONNX spike, browser history, desktop shell = product/research only
+
+## Wave 6 — post-1.4 polish (1.4.1)
+
+- [x] Silence Chroma telemetry spam
+- [x] API `/graph/neighbors`
+- [x] CLI hybrid default tests + graph tests
+- [x] README v1.4 section

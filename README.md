@@ -32,15 +32,24 @@ If this project helps you, consider starring the repo on GitHub.
 
 ## Recent major improvements
 
+- **v1.4** — ingest noise-dir excludes (`.obsidian`, `.git`, …), `PRV_HYBRID` defaults, optional API bearer token, `graph` CLI + `/graph/neighbors`, CI harden
 - `personalragvault doctor` — embedding dimension safety, Ollama health, large-vault advice
 - `personalragvault config edit` — proper TOML configuration with editor integration
-- `personalragvault serve` — local FastAPI API for agents/tools
+- `personalragvault serve` — local FastAPI API for agents/tools (`/query`, `/ingest`, `/graph/neighbors`)
 - Streaming batch ingest + `--dry-run` for large vaults
 - Streaming answers in both CLI and Streamlit UI (token-by-token)
 - Automatic citation extraction and display
 - Optional OCR: `pip install "personalragvault[ocr]"`
 - Real multi-turn conversations in the UI
 - Query timing breakdown + optional response cache
+
+## New in v1.4
+
+- Recursive ingest skips `.obsidian` / `.git` / caches / `node_modules` (+ `PRV_INGEST_EXCLUDE_DIRS`)
+- `PRV_HYBRID` default for CLI (`--hybrid` / `--no-hybrid`), API, and UI
+- `GET /version`, optional `PRV_API_TOKEN` Bearer auth
+- `personalragvault graph <note>` and `--export-edges`; HTTP `GET /graph/neighbors`
+- Multi-parser registry so Notion exports do not wipe Obsidian wikilink metadata
 
 ## Quick start
 

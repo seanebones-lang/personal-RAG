@@ -152,3 +152,25 @@ def test_auth_unset_no_guard(monkeypatch):
     monkeypatch.delenv("PRV_API_TOKEN", raising=False)
     client = TestClient(app)
     assert client.get("/status").status_code == 200
+
+
+def test_graph_neighbors_mocked():
+    fixed = {
+        "note": "Alpha",
+        "outbound": ["Beta"],
+        "inbound": [],
+        "neighbors": ["Beta"],
+        "notes_indexed": 2,
+        "edges": 1,
+    }
+    client = TestClient(app)
+    with patch("src.retrieval.graph.neighbors", return_value=fixed):
+        r = client.get("/graph/neighbors", params={"note": "Alpha", "direction": "out"})
+    assert r.status_code == 200
+    assert r.json()["outbound"] == ["Beta"]
+
+
+def test_graph_neighbors_bad_direction():
+    client = TestClient(app)
+    r = client.get("/graph/neighbors", params={"note": "X", "direction": "sideways"})
+    assert r.status_code == 422

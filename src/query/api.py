@@ -10,6 +10,7 @@ Endpoints:
 - POST /ingest
 - GET  /cache/stats
 - POST /cache/clear
+- GET  /graph/neighbors
 
 Optional auth: set non-empty ``PRV_API_TOKEN`` to require
 ``Authorization: Bearer <token>`` on all routes except /health and /version.
@@ -28,7 +29,7 @@ from src.core.vault import get_status_info, preview_ingest, run_ingest, run_quer
 from src.store.response_cache import get_response_cache, reset_response_cache
 
 _PACKAGE_NAME = "personalragvault"
-_FALLBACK_VERSION = "1.4.0"
+_FALLBACK_VERSION = "1.4.1"
 
 
 def get_package_version() -> str:
@@ -220,3 +221,23 @@ def cache_stats() -> Dict[str, int]:
 def cache_clear() -> Dict[str, str]:
     reset_response_cache()
     return {"status": "cleared"}
+
+
+@app.get("/graph/neighbors")
+def graph_neighbors(
+    note: str,
+    direction: str = "both",
+    limit: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Wikilink neighbors for a note stem (same data as CLI `graph`)."""
+    try:
+        from src.retrieval.graph import neighbors
+
+        d = (direction or "both").strip().lower()
+        if d not in ("out", "in", "both"):
+            raise HTTPException(status_code=422, detail="direction must be out, in, or both")
+        return neighbors(note, direction=d, limit=limit)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e

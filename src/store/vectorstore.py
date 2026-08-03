@@ -14,6 +14,18 @@ from src.config import get_settings
 
 logger = logging.getLogger(__name__)
 
+# Suppress Chroma/PostHog telemetry at import (avoids capture() TypeError spam).
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
+for _log_name in (
+    "chromadb.telemetry",
+    "chromadb.telemetry.product",
+    "chromadb.telemetry.product.posthog",
+    "posthog",
+):
+    _lg = logging.getLogger(_log_name)
+    _lg.setLevel(logging.CRITICAL)
+    _lg.disabled = True
+
 _client: Any = None
 EMBED_DIM_KEY = "embed_dim"
 HNSW_CONFIGURED_KEY = "hnsw_configured"
@@ -32,7 +44,7 @@ def get_client() -> Any:
     global _client
     settings = get_settings()
     settings.db_path.mkdir(parents=True, exist_ok=True)
-    os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
+    os.environ["ANONYMIZED_TELEMETRY"] = "False"
     if _client is None:
         _client = chromadb.PersistentClient(
             path=str(settings.db_path),
