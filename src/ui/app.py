@@ -87,7 +87,10 @@ with tab_ingest:
 
 with tab_query:
     top_k = st.slider("Top K", 1, 20, 5)
-    hybrid = st.checkbox("Hybrid search (BM25 + vector)")
+    from src.config import get_settings as _get_settings
+
+    _hybrid_default = _get_settings().hybrid_default
+    hybrid = st.checkbox("Hybrid search (BM25 + vector)", value=_hybrid_default)
     no_llm = st.checkbox("Retrieval only (no Ollama)")
     multi_query = st.checkbox("Multi-query fusion")
     rerank = st.checkbox("Cross-encoder rerank")

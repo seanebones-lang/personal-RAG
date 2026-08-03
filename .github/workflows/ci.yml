@@ -9,7 +9,6 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
-      - run: pip install -e ".[dev,ui]"
-      - run: ruff check .
-      - run: mypy src || true
-      - run: pytest --cov=src --cov-report=term-missing -q
+      - run: pip install -e ".[dev]"
+      - run: ruff check src tests
+      - run: pytest -m "not integration" --cov=src --cov-report=term-missing -q

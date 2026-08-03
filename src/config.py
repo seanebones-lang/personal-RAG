@@ -49,6 +49,38 @@ def _bool_env(name: str, default: bool) -> bool:
     return raw.strip().lower() in ("1", "true", "yes", "on")
 
 
+# Default directory names skipped during recursive ingest discovery (case-sensitive path parts).
+DEFAULT_INGEST_EXCLUDE_DIRS: frozenset[str] = frozenset(
+    {
+        ".obsidian",
+        ".git",
+        ".venv",
+        "venv",
+        "node_modules",
+        "__pycache__",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".tox",
+        ".hg",
+        ".svn",
+        ".idea",
+        ".vscode",
+    }
+)
+
+
+def _parse_ingest_exclude_dirs(raw: str | None) -> frozenset[str]:
+    """Merge default noise dirs with optional PRV_INGEST_EXCLUDE_DIRS (comma-separated)."""
+    extra: set[str] = set()
+    if raw:
+        for part in raw.split(","):
+            name = part.strip()
+            if name:
+                extra.add(name)
+    return frozenset(DEFAULT_INGEST_EXCLUDE_DIRS | extra)
+
+
 def _parse_strategy_by_ext(raw: str | None) -> dict[str, str]:
     if not raw or not raw.strip():
         return {}
@@ -119,6 +151,8 @@ class Settings:
     response_cache_ttl: int
     response_cache_max_size: int
     ingest_batch_size: int
+    ingest_exclude_dirs: frozenset[str]
+    hybrid_default: bool
     collection_name: str = "personal_knowledge"
 
     @classmethod
@@ -184,6 +218,12 @@ class Settings:
             response_cache_ttl=_int_env("PRV_RESPONSE_CACHE_TTL", 3600, minimum=1),
             response_cache_max_size=_int_env("PRV_RESPONSE_CACHE_MAX", 1000, minimum=1),
             ingest_batch_size=_int_env("PRV_INGEST_BATCH_SIZE", 500, minimum=10),
+            ingest_exclude_dirs=_parse_ingest_exclude_dirs(
+                os.environ.get("PRV_INGEST_EXCLUDE_DIRS")
+            ),
+            # Callers (CLI/API/UI) should pass hybrid=get_settings().hybrid_default
+            # when the user does not explicitly override; run_query keeps hybrid: bool = False.
+            hybrid_default=_bool_env("PRV_HYBRID", False),
         )
 
 

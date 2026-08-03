@@ -211,7 +211,11 @@ def query(
     q: str = typer.Argument(..., help="Natural language question"),
     top_k: int = typer.Option(5, "--top-k", "-k", min=1, help="Chunks to retrieve"),
     no_llm: bool = typer.Option(False, "--no-llm", help="Retrieval only; do not call Ollama"),
-    hybrid: bool = typer.Option(False, "--hybrid", help="BM25 + vector RRF fusion"),
+    hybrid: Optional[bool] = typer.Option(
+        None,
+        "--hybrid/--no-hybrid",
+        help="BM25 + vector RRF fusion (default: PRV_HYBRID)",
+    ),
     max_distance: Optional[float] = typer.Option(
         None,
         "--max-distance",
@@ -239,6 +243,7 @@ def query(
 ) -> None:
     """Query your personal knowledge base with RAG + Ollama."""
     settings = get_settings()
+    use_hybrid = settings.hybrid_default if hybrid is None else hybrid
     if top_k > settings.max_top_k:
         _stderr.print(
             f"[red]Error:[/red] top_k cannot exceed {settings.max_top_k} (set PRV_MAX_TOP_K)"
@@ -267,7 +272,7 @@ def query(
             top_k=top_k,
             max_distance=max_distance,
             where=where,
-            hybrid=hybrid,
+            hybrid=use_hybrid,
             use_llm=not no_llm,
             multi_query=multi_query,
             expand_query=expand_query,
@@ -514,6 +519,10 @@ def status() -> None:
     console.print(f"  Caches: file={info.use_file_cache} fts={info.use_fts} "
         f"embed={info.use_embedding_cache} response={info.response_cache_enabled}"
     )
+    console.print(
+        f"  Defaults: hybrid={info.hybrid_default} "
+        f"ingest_exclude_dirs={info.ingest_exclude_dir_count}"
+    )
     if info.response_cache_stats:
         s = info.response_cache_stats
         console.print(
@@ -616,7 +625,7 @@ def reindex_cmd(
 def eval_run(
     dataset: Path = typer.Argument(..., help="JSONL evaluation dataset"),
     top_k: int = typer.Option(5, "--top-k", "-k", min=1),
-    hybrid: bool = typer.Option(False, "--hybrid"),
+    hybrid: Optional[bool] = typer.Option(None, "--hybrid/--no-hybrid"),
     multi_query: bool = typer.Option(False, "--multi-query"),
     expand_query: bool = typer.Option(False, "--expand-query"),
     rerank: bool = typer.Option(False, "--rerank"),
@@ -626,10 +635,11 @@ def eval_run(
     """Run retrieval evaluation (hit@k, MRR, NDCG@k)."""
     from src.eval.runner import run_evaluation
 
+    use_hybrid = get_settings().hybrid_default if hybrid is None else hybrid
     payload = run_evaluation(
         dataset,
         top_k=top_k,
-        hybrid=hybrid,
+        hybrid=use_hybrid,
         multi_query=multi_query,
         expand_query=expand_query,
         rerank=rerank,
@@ -750,6 +760,46 @@ def ui(
     stcli.main()
 
 
+@app.command("graph")
+def graph_cmd(
+    note: Optional[str] = typer.Argument(
+        None, help="Note name (stem) for neighbors; omit with --export-edges"
+    ),
+    direction: str = typer.Option(
+        "both", "--direction", "-d", help="out | in | both (default both)"
+    ),
+    export_edges: Optional[Path] = typer.Option(
+        None, "--export-edges", help="Write wikilink edge list JSON and exit"
+    ),
+    limit: Optional[int] = typer.Option(
+        None, "--limit", help="Max corpus rows to scan (default hybrid fetch limit)"
+    ),
+) -> None:
+    """Obsidian wikilink neighbors / edge export from vault metadata."""
+    from src.retrieval.graph import export_edges_json, neighbors
+
+    if export_edges is not None:
+        n = export_edges_json(export_edges, limit=limit)
+        console.print(f"[green]Wrote {n} edges to {export_edges}[/green]")
+        return
+    if not note:
+        _stderr.print("[red]Error:[/red] pass a note name or --export-edges PATH")
+        raise typer.Exit(code=2)
+    d = direction.strip().lower()
+    if d not in ("out", "in", "both"):
+        _stderr.print("[red]Error:[/red] --direction must be out, in, or both")
+        raise typer.Exit(code=2)
+    result = neighbors(note, direction=d, limit=limit)
+    console.print(f"[bold]Note:[/bold] {result['note']}")
+    if result.get("source"):
+        console.print(f"[dim]{result['source']}[/dim]")
+    console.print(f"Outbound ({len(result['outbound'])}): {', '.join(result['outbound']) or '—'}")
+    console.print(f"Inbound  ({len(result['inbound'])}): {', '.join(result['inbound']) or '—'}")
+    console.print(
+        f"[dim]Indexed notes≈{result['notes_indexed']} edges={result['edges']}[/dim]"
+    )
+
+
 @app.command()
 def serve(
     host: str = typer.Option("127.0.0.1", "--host", help="Bind address (default localhost only)"),
@@ -759,8 +809,9 @@ def serve(
     """Run local FastAPI HTTP API (query/ingest/status). Localhost by default."""
     if host not in ("127.0.0.1", "localhost", "::1") and not _quiet:
         console.print(
-            "[yellow]Warning: binding outside localhost exposes your vault. "
-            "Add auth before network use.[/yellow]"
+            "[bold yellow]Warning:[/bold yellow] binding outside localhost "
+            f"([cyan]{host}[/cyan]) exposes your vault over the network. "
+            "Set [cyan]PRV_API_TOKEN[/cyan] (Bearer) before non-loopback use."
         )
     try:
         import uvicorn
@@ -769,8 +820,11 @@ def serve(
         raise typer.Exit(code=1) from exc
 
     if not _quiet:
-        console.print(f"[bold green]API[/bold green] http://{host}:{port}")
-        console.print("  POST /query  POST /ingest  GET /status  GET /health")
+        base = f"http://{host}:{port}"
+        console.print(f"[bold green]API[/bold green] {base}")
+        console.print(f"  Docs: [link={base}/docs]{base}/docs[/link]")
+        console.print("  GET /health  GET /version  GET /status")
+        console.print("  POST /query  POST /ingest  GET|POST /cache/*")
     uvicorn.run("src.query.api:app", host=host, port=port, reload=reload, log_level="info")
 
 

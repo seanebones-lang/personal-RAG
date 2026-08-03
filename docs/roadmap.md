@@ -1,6 +1,6 @@
 # Roadmap
 
-PersonalRAGVault evolves in phased releases. **v1.3** focuses on API surface, large-ingest safety, caching, and Obsidian graph metadata.
+PersonalRAGVault evolves in phased releases. **v1.4** hardens ingest/API defaults and ships lightweight wikilink graph ops.
 
 ## Shipped
 
@@ -11,25 +11,26 @@ PersonalRAGVault evolves in phased releases. **v1.3** focuses on API surface, la
 | **v1.0** | NDCG, `eval generate`, `semantic_embed`, multi-query, rerank, parent expand, UI export/chat |
 | **v1.1–1.2** | Doctor, config TOML, streaming answers, OCR, WhatsApp/Notion/bookmarks/ICS, reranker presets |
 | **v1.3** | FastAPI `serve`, response cache, EPUB, streaming batch ingest, dry-run, Obsidian wikilinks |
+| **v1.4** | Ingest noise excludes, `PRV_HYBRID` defaults, API token/version, `graph` CLI, CI harden |
 
-## v1.3 (current)
+## v1.4 (current)
 
-- **API:** `personalragvault serve` — local FastAPI (`/query`, `/ingest`, `/status`, `/health`)
-- **Ingest:** streaming batch upsert (`PRV_INGEST_BATCH_SIZE`), `--dry-run`, Rich progress
-- **Cache:** query response cache (`PRV_RESPONSE_CACHE*`), auto-invalidate on ingest/purge
-- **Sources:** EPUB parser (stdlib fallback + optional `ebooklib`), Obsidian wikilink metadata
-- **Reliability:** fixed `run_query` hybrid/use_llm regression from intermediate cache wiring
+- **Ingest:** skip `.obsidian`/`.git`/caches/… + `PRV_INGEST_EXCLUDE_DIRS`
+- **Defaults:** `PRV_HYBRID` for CLI/API/UI (`--hybrid/--no-hybrid`)
+- **API:** `GET /version`, optional `PRV_API_TOKEN`, serve docs URL + bind warnings
+- **Graph:** `personalragvault graph <note>` + `--export-edges` over wikilink metadata
+- **CI:** unit-only pytest + ruff on `src tests` + coverage term
 
 ## Planned
 
 | Release | Focus |
 |---------|--------|
-| **v1.4** | ONNX / faster CPU embed path experiment; browser history opt-in |
-| **v2.0** | Desktop shell (if demand), plugin parser API, full Obsidian graph query |
+| **v1.5** | ONNX / faster CPU embed path experiment (feature-flag); browser history opt-in |
+| **v2.0** | Desktop shell (if demand), plugin parser API, richer graph query |
 
 ## Out of scope
 
 - Cloud-hosted API or multi-tenant SaaS
 - Default remote embeddings or telemetry
 
-See [evaluation.md](evaluation.md), [filtering.md](filtering.md), [large-vaults.md](large-vaults.md), [community.md](community.md), and [sources/](sources/).
+See [CTO_BACKLOG.md](CTO_BACKLOG.md), [evaluation.md](evaluation.md), [filtering.md](filtering.md), [large-vaults.md](large-vaults.md), [community.md](community.md), and [sources/](sources/).

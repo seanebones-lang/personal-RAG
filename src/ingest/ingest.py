@@ -57,14 +57,31 @@ def validate_ingest_path(folder: Path, allow_outside_home: bool = False) -> Path
     return resolved
 
 
+def _path_has_excluded_dir(path: Path, root: Path, exclude_dirs: frozenset[str]) -> bool:
+    """True if any path component under root matches an excluded directory name."""
+    try:
+        parts = path.relative_to(root).parts
+    except ValueError:
+        parts = path.parts
+    return any(part in exclude_dirs for part in parts)
+
+
 def discover_files(folder: Path, recursive: bool = False) -> List[Path]:
-    """Find supported files in a folder."""
+    """Find supported files in a folder.
+
+    When recursive, skips any path whose components include noise directory names
+    (see Settings.ingest_exclude_dirs / PRV_INGEST_EXCLUDE_DIRS), e.g. .obsidian, .git.
+    """
     extensions = all_supported_extensions()
+    exclude_dirs = get_settings().ingest_exclude_dirs
     files: List[Path] = []
     if recursive:
         for f in folder.rglob("*"):
-            if f.is_file() and f.suffix.lower() in extensions:
-                files.append(f)
+            if not f.is_file() or f.suffix.lower() not in extensions:
+                continue
+            if _path_has_excluded_dir(f, folder, exclude_dirs):
+                continue
+            files.append(f)
     else:
         for f in folder.iterdir():
             if f.is_file() and f.suffix.lower() in extensions:

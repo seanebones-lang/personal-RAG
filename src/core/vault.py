@@ -70,6 +70,8 @@ class StatusInfo:
     sidecar_stats: Dict[str, int]
     response_cache_enabled: bool = False
     response_cache_stats: Optional[Dict[str, int]] = None
+    hybrid_default: bool = False
+    ingest_exclude_dir_count: int = 0
 
 
 def get_status_info() -> StatusInfo:
@@ -97,6 +99,8 @@ def get_status_info() -> StatusInfo:
         sidecar_stats=get_sidecar_stats(),
         response_cache_enabled=settings.response_cache_enabled,
         response_cache_stats=cache_stats,
+        hybrid_default=settings.hybrid_default,
+        ingest_exclude_dir_count=len(settings.ingest_exclude_dirs),
     )
 
 
@@ -252,7 +256,12 @@ def run_query(
     history: Optional[List[Tuple[str, str]]] = None,
     stream: bool = False,
 ) -> Dict[str, Any]:
-    """Retrieve (+ optional LLM answer). Caches non-stream results when enabled."""
+    """Retrieve (+ optional LLM answer). Caches non-stream results when enabled.
+
+    ``hybrid`` defaults to False for backward compatibility. CLI/API/UI callers
+    should pass ``hybrid=get_settings().hybrid_default`` (from ``PRV_HYBRID``)
+    when the user has not explicitly overridden the flag.
+    """
     settings = get_settings()
 
     # Streaming and multi-turn history: never cache

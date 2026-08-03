@@ -1,4 +1,4 @@
-"""Parser registry — dispatch by file extension."""
+"""Parser registry — dispatch by file extension (ordered multi-parser)."""
 
 from __future__ import annotations
 
@@ -21,13 +21,15 @@ from src.ingest.parsers.whatsapp import WhatsAppParser
 
 logger = logging.getLogger(__name__)
 
-_REGISTRY: Dict[str, BaseParser] = {}
+# Multiple parsers may share an extension; tried in registration order until one
+# returns documents (e.g. Notion returns [] for non-Notion .md, then Obsidian).
+_REGISTRY: Dict[str, List[BaseParser]] = {}
 
 
 def _register(parser_cls: Type[BaseParser]) -> None:
     instance = parser_cls()
     for ext in instance.extensions:
-        _REGISTRY[ext] = instance
+        _REGISTRY.setdefault(ext, []).append(instance)
 
 
 def _init_registry() -> None:
@@ -36,38 +38,38 @@ def _init_registry() -> None:
     _register(EmlParser)
     _register(MboxParser)
     _register(TelegramParser)
+    _register(IcsParser)
+    _register(BookmarksHTMLParser)
+    _register(RaindropParser)
+    _register(PinboardParser)
+    _register(WhatsAppParser)
+    # .md: Notion only when heuristics match (else []); Obsidian enriches the rest
+    _register(NotionParser)
     _register(ObsidianMarkdownParser)
-    _register(IcsParser)  # Calendar data (.ics)
-    _register(BookmarksHTMLParser)  # Chrome/Edge/Brave bookmark HTML exports
-    _register(RaindropParser)       # Raindrop.io JSON exports
-    _register(PinboardParser)       # Pinboard JSON exports
-    _register(WhatsAppParser)       # WhatsApp chat exports (very common personal data)
-    _register(NotionParser)         # Notion Markdown exports
-    _register(EpubParser)           # EPUB e-books
+    _register(EpubParser)
 
-    # Optional OCR support (only if user installed with [ocr] extra and tesseract is present)
     try:
         from src.ingest.parsers.ocr import OCRParser
+
         ocr_instance = OCRParser()
         if getattr(ocr_instance, "_ocr_available", False):
             _register(OCRParser)
             logger.info("OCR parser registered for image files")
     except Exception:
-        pass  # OCR not available — this is fine
+        pass
 
 
 def extract_documents(file_path: Path, fallback_text: str) -> List[ExtractedDocument]:
-    """Use registered parser or wrap fallback plain text."""
+    """Use registered parsers (in order) or wrap fallback plain text."""
     _init_registry()
     ext = file_path.suffix.lower()
-    parser = _REGISTRY.get(ext)
-    if parser:
+    for parser in _REGISTRY.get(ext, []):
         try:
             docs = parser.extract(file_path)
             if docs:
                 return docs
         except Exception as exc:
-            logger.warning("Parser failed for %s: %s", file_path, exc)
+            logger.warning("Parser failed for %s (%s): %s", file_path, type(parser).__name__, exc)
     if ext == ".json" and file_path.name == "result.json":
         return []
     if fallback_text.strip():
@@ -78,3 +80,8 @@ def extract_documents(file_path: Path, fallback_text: str) -> List[ExtractedDocu
 def registered_extensions() -> frozenset[str]:
     _init_registry()
     return frozenset(_REGISTRY.keys())
+
+
+def reset_registry_for_tests() -> None:
+    """Clear registry so tests can re-init after monkeypatches."""
+    _REGISTRY.clear()

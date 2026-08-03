@@ -7,7 +7,18 @@ personalragvault <command> [options]
 python -m src.cli <command> [options]
 ```
 
-Global options (before the subcommand):
+## Global options
+
+Global options must appear **before** the subcommand (Typer callback):
+
+```bash
+# Correct
+personalragvault -q query "hello" --no-llm
+personalragvault -v ingest ~/notes --recursive
+
+# Wrong — `-q` is not a query option
+personalragvault query "hello" -q
+```
 
 | Flag | Description |
 |------|-------------|
@@ -37,10 +48,19 @@ personalragvault ingest PATH [options]
 
 Ingest streams file → embed → upsert batches (`PRV_INGEST_BATCH_SIZE`, default 500) with Rich progress.
 
+### Directory excludes
+
+Recursive discovery skips paths whose components match built-in noise directory names (case-sensitive path parts):
+
+`.obsidian`, `.git`, `.venv`, `venv`, `node_modules`, `__pycache__`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `.tox`, `.hg`, `.svn`, `.idea`, `.vscode`.
+
+Add more names with `PRV_INGEST_EXCLUDE_DIRS` (comma-separated). Matching is by **directory name component**, not full path. Non-recursive ingest only lists files in the top folder (excludes mainly matter with `-r`). See [configuration.md](configuration.md).
+
 **Example:**
 
 ```bash
-personalragvault ingest ~/Downloads -r --verbose
+export PRV_INGEST_EXCLUDE_DIRS=vendor,dist
+personalragvault ingest ~/Documents/Vault -r --verbose
 personalragvault ingest ~/Documents/Vault --recursive --dry-run
 ```
 
@@ -58,7 +78,7 @@ personalragvault query "QUESTION" [options]
 |--------|-------------|
 | `--top-k` / `-k` | Number of chunks to retrieve (default: 5, max: `PRV_MAX_TOP_K`) |
 | `--no-llm` | Print retrieved context only |
-| `--hybrid` | BM25 + vector RRF fusion |
+| `--hybrid` | BM25 + vector RRF fusion (API also defaults from `PRV_HYBRID`; see configuration) |
 | `--max-distance` | Drop chunks with distance above threshold |
 | `--where-year` | Filter by metadata year |
 | `--source-contains` | Filter sources containing substring |
@@ -70,11 +90,14 @@ personalragvault query "QUESTION" [options]
 | `--parent-expand` | Expand hits with sibling chunks |
 | `--output` / `-o` | Write results JSON |
 
+`PRV_HYBRID=true` sets `Settings.hybrid_default`. The HTTP API applies that default when `hybrid` is omitted from `POST /query`. CLI still accepts explicit `--hybrid`.
+
 **Examples:**
 
 ```bash
 personalragvault query "invoices from Acme Corp"
-personalragvault query "python asyncio patterns" --top-k 10 --no-llm
+personalragvault -q query "python asyncio patterns" --top-k 10 --no-llm
+personalragvault query "roadmap" --hybrid --no-llm
 ```
 
 ---
@@ -93,7 +116,7 @@ personalragvault watch PATH [options]
 | `--recursive` / `-r` | off | Passed through to ingest |
 | `--allow-outside-home` | off | Path validation override |
 
-Runs until `Ctrl+C`. Performs an initial ingest on start.
+Runs until `Ctrl+C`. Performs an initial ingest on start. Same exclude-dir rules as `ingest` apply when scanning recursively.
 
 ---
 
@@ -143,7 +166,7 @@ Metrics: Hit@k, MRR, NDCG@k.
 
 ## `ui`
 
-Launch the local Streamlit app (`personalragvault[ui]`).
+Launch the local Streamlit app (`personalragvault[ui]`). Binds `127.0.0.1`.
 
 ```bash
 personalragvault ui [--port 8501]
@@ -173,25 +196,39 @@ personalragvault reindex PATH [--recursive] [--allow-outside-home] [--yes]
 
 ---
 
-## `ui`
-
-Local Streamlit UI on `127.0.0.1` (requires `[ui]` extra).
-
-```bash
-personalragvault ui [--port 8501]
-```
-
----
-
 ## `serve`
 
-Local FastAPI HTTP API (localhost by default). Endpoints: `GET /health`, `GET /status`, `POST /query`, `POST /ingest`, `GET /cache/stats`, `POST /cache/clear`.
+Local FastAPI HTTP API (localhost by default).
+
+**Endpoints:** `GET /health`, `GET /status`, `GET /version` (package version), `POST /query`, `POST /ingest`, `GET /cache/stats`, `POST /cache/clear`. OpenAPI UI: `http://HOST:PORT/docs`.
 
 ```bash
 personalragvault serve [--host 127.0.0.1] [--port 8765] [--reload]
 ```
 
-Do not bind to `0.0.0.0` without authentication — the vault is private by design.
+### Security
+
+- **Default bind is loopback** (`127.0.0.1`). Prefer this for day-to-day use.
+- Binding outside localhost (`0.0.0.0`, LAN IP, etc.) prints a warning and reminds you to set `PRV_API_TOKEN`.
+- Optional `PRV_API_TOKEN` (off by default — local-first): when non-empty, protected routes expect `Authorization: Bearer <token>`. **`GET /health` and `GET /version` stay public.** A token is not a full security boundary; do not expose the API to untrusted networks without additional hardening.
+- Startup prints base URL + OpenAPI docs link (`/docs`).
+- Ingest and query can read local paths and your vault contents — treat the port like shell access to your notes.
+
+**Examples:**
+
+```bash
+personalragvault serve
+personalragvault serve --host 127.0.0.1 --port 8765
+# OpenAPI
+open http://127.0.0.1:8765/docs
+
+export PRV_API_TOKEN=change-me
+curl -s http://127.0.0.1:8765/version
+curl -s -H "Authorization: Bearer change-me" \
+  -H "Content-Type: application/json" \
+  -d '{"question":"hello","use_llm":false}' \
+  http://127.0.0.1:8765/query
+```
 
 ---
 
