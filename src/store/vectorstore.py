@@ -266,6 +266,63 @@ def search(
     return out
 
 
+def get_by_where(
+    where: Dict[str, Any],
+    limit: int = 500,
+) -> List[Dict[str, Any]]:
+    """Fetch documents matching metadata filter (used by parent expand)."""
+    if not where:
+        return []
+    collection = get_collection()
+    try:
+        result = collection.get(
+            where=where,
+            include=["documents", "metadatas"],
+            limit=limit,
+        )
+    except Exception as exc:
+        logger.warning("get_by_where failed: %s", exc)
+        return []
+    ids = result.get("ids") or []
+    docs = result.get("documents") or []
+    metas = result.get("metadatas") or []
+    out: List[Dict[str, Any]] = []
+    for i, doc_id in enumerate(ids):
+        out.append(
+            {
+                "id": doc_id,
+                "text": docs[i] if i < len(docs) else "",
+                "metadata": metas[i] if i < len(metas) else {},
+            }
+        )
+    return out
+
+
+def get_by_ids(ids: List[str]) -> List[Dict[str, Any]]:
+    """Hydrate full rows by chunk id."""
+    if not ids:
+        return []
+    collection = get_collection()
+    try:
+        result = collection.get(ids=ids, include=["documents", "metadatas"])
+    except Exception as exc:
+        logger.warning("get_by_ids failed: %s", exc)
+        return []
+    out_ids = result.get("ids") or []
+    docs = result.get("documents") or []
+    metas = result.get("metadatas") or []
+    out: List[Dict[str, Any]] = []
+    for i, doc_id in enumerate(out_ids):
+        out.append(
+            {
+                "id": doc_id,
+                "text": docs[i] if i < len(docs) else "",
+                "metadata": metas[i] if i < len(metas) else {},
+            }
+        )
+    return out
+
+
 def get_sidecar_stats() -> Dict[str, int]:
     settings = get_settings()
     stats: Dict[str, int] = {"chunks": count_documents()}

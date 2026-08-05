@@ -121,7 +121,9 @@ def check_caches() -> CheckResult:
     if settings.use_embedding_cache:
         msgs.append("embedding cache ON")
     if settings.use_fts:
-        msgs.append("FTS ON")
+        msgs.append("FTS ON (used by hybrid)")
+    if settings.query_preset:
+        msgs.append(f"query preset={settings.query_preset}")
 
     return CheckResult(
         "Caches & indexes",
@@ -139,14 +141,14 @@ def check_large_vault_recommendations(chunk_count: int) -> List[str]:
         )
     if chunk_count > 15000:
         tips.append(
-            "Large vault (>15k chunks). Strongly recommended: enable --hybrid search "
-            "and keep PRV_HYBRID_FETCH_LIMIT reasonable (default 5000 is usually fine)."
+            "Large vault (>15k chunks). Strongly recommended: --hybrid (uses FTS5 + vector RRF) "
+            "or --preset balanced. Keep PRV_HYBRID_FETCH_LIMIT reasonable (default 5000)."
         )
     if chunk_count > 30000:
         tips.append(
-            "Very large vault. Use reranking selectively (it adds latency). "
-            "Prefer metadata filtering + hybrid search over pure vector + rerank. "
-            "Consider splitting your vault by year or project using multiple PRV_DB_PATHs."
+            "Very large vault. Prefer --preset balanced with metadata filters over "
+            "--preset quality (multi-query + parent expand add cost). "
+            "Consider splitting by year/project via multiple PRV_DB_PATHs."
         )
     if chunk_count > 60000:
         tips.append(

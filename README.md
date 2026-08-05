@@ -43,7 +43,15 @@ If this project helps you, consider starring the repo on GitHub.
 - Real multi-turn conversations in the UI
 - Query timing breakdown + optional response cache
 
-## New in v1.4
+## New in v1.5
+
+- **Hybrid uses FTS5** (vector + keyword RRF); BM25 full-corpus rebuild is fallback only
+- **Query presets:** `fast` / `balanced` / `quality` — `personalragvault query "..." --preset balanced`
+- **API streaming:** `POST /query/stream` (SSE) + `GET /presets`
+- Multi-query composes with hybrid; parent expand is metadata-scoped (no vault-wide scan)
+- Cross-encoder reranker cached in-process; API token compare is constant-time
+
+## v1.4 (still relevant)
 
 - Recursive ingest skips `.obsidian` / `.git` / caches / `node_modules` (+ `PRV_INGEST_EXCLUDE_DIRS`)
 - `PRV_HYBRID` default for CLI (`--hybrid` / `--no-hybrid`), API, and UI

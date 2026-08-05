@@ -255,12 +255,15 @@ def run_query(
     parent_expand: bool = False,
     history: Optional[List[Tuple[str, str]]] = None,
     stream: bool = False,
+    preset: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Retrieve (+ optional LLM answer). Caches non-stream results when enabled.
 
     ``hybrid`` defaults to False for backward compatibility. CLI/API/UI callers
     should pass ``hybrid=get_settings().hybrid_default`` (from ``PRV_HYBRID``)
     when the user has not explicitly overridden the flag.
+
+    ``preset`` may be ``fast`` / ``balanced`` / ``quality`` (see retrieval.presets).
     """
     settings = get_settings()
 
@@ -279,6 +282,7 @@ def run_query(
             parent_expand=parent_expand,
             history=history,
             stream=stream,
+            preset=preset,
         )
 
     if not settings.response_cache_enabled:
@@ -295,6 +299,7 @@ def run_query(
             parent_expand=parent_expand,
             history=history,
             stream=stream,
+            preset=preset,
         )
 
     cache = get_response_cache()
@@ -308,6 +313,7 @@ def run_query(
         "rerank": rerank,
         "parent": parent_expand,
         "where": where,
+        "preset": preset,
     }
     cached = cache.get(question, **key_kwargs)
     if cached is not None:
@@ -328,6 +334,7 @@ def run_query(
         parent_expand=parent_expand,
         history=history,
         stream=stream,
+        preset=preset,
     )
     # Do not cache generators or errors that might be transient
     if result.get("answer_stream") is None and result.get("llm_error") is None:
@@ -350,17 +357,34 @@ def _run_query_impl(
     parent_expand: bool = False,
     history: Optional[List[Tuple[str, str]]] = None,
     stream: bool = False,
+    preset: Optional[str] = None,
 ) -> Dict[str, Any]:
     settings = get_settings()
+
+    # Apply query preset (explicit flags still win when already True via args/env)
+    from src.retrieval.presets import resolve_query_preset
+
+    qp = resolve_query_preset(preset or getattr(settings, "query_preset", None))
+    if qp is not None:
+        hybrid = hybrid or qp.hybrid
+        multi_query = multi_query or qp.multi_query
+        expand_query = expand_query or qp.expand_query
+        rerank = rerank or qp.rerank
+        parent_expand = parent_expand or qp.parent_expand
+
     use_multi = multi_query or settings.multi_query
     use_expand = expand_query or settings.expand_query_ollama
     use_rerank = rerank or settings.rerank
     use_parent = parent_expand or settings.parent_expand
+    # hybrid stays as passed (CLI already applied hybrid_default); preset may force on
+    use_hybrid = bool(hybrid)
 
     t0 = time.perf_counter()
 
     def _vector_search(emb, k: int) -> List[Dict[str, Any]]:
         return search(emb, top_k=k, max_distance=max_distance, where=where)
+
+    candidate_k = settings.rerank_candidates if use_rerank else top_k
 
     if use_multi:
         if use_expand:
@@ -374,17 +398,22 @@ def _run_query_impl(
             queries,
             search_fn=_vector_search,
             embed_fn=embed_query,
-            top_k=settings.rerank_candidates if use_rerank else top_k,
+            top_k=candidate_k,
             rrf_k=settings.hybrid_rrf_k,
+            hybrid=use_hybrid,
+            vector_search_fn=search if use_hybrid else None,
+            fetch_corpus_fn=fetch_corpus if use_hybrid else None,
+            where=where,
+            max_distance=max_distance,
         )
-    elif hybrid:
+    elif use_hybrid:
         query_embedding = embed_query(question)
         results = hybrid_search(
             query_text=question,
             query_embedding=query_embedding,
             vector_search_fn=search,
             fetch_corpus_fn=fetch_corpus,
-            top_k=settings.rerank_candidates if use_rerank else top_k,
+            top_k=candidate_k,
             where=where,
             max_distance=max_distance,
         )
@@ -392,7 +421,7 @@ def _run_query_impl(
         query_embedding = embed_query(question)
         results = search(
             query_embedding,
-            top_k=settings.rerank_candidates if use_rerank else top_k,
+            top_k=candidate_k,
             max_distance=max_distance,
             where=where,
         )
@@ -407,7 +436,12 @@ def _run_query_impl(
 
     retrieval_time = time.perf_counter() - t0
 
-    context = build_tagged_context(results, settings.max_context_chars, compress=True)
+    context = build_tagged_context(
+        results,
+        settings.max_context_chars,
+        compress=True,
+        query=question,
+    )
 
     answer = None
     llm_error = None
@@ -449,6 +483,13 @@ def _run_query_impl(
             "total": round(total_time, 3),
         },
         "cached": False,
+        "flags": {
+            "hybrid": use_hybrid,
+            "multi_query": use_multi,
+            "rerank": use_rerank,
+            "parent_expand": use_parent,
+            "preset": qp.name if qp else None,
+        },
     }
 
 

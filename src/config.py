@@ -153,6 +153,7 @@ class Settings:
     ingest_batch_size: int
     ingest_exclude_dirs: frozenset[str]
     hybrid_default: bool
+    query_preset: str | None
     collection_name: str = "personal_knowledge"
 
     @classmethod
@@ -224,6 +225,9 @@ class Settings:
             # Callers (CLI/API/UI) should pass hybrid=get_settings().hybrid_default
             # when the user does not explicitly override; run_query keeps hybrid: bool = False.
             hybrid_default=_bool_env("PRV_HYBRID", False),
+            query_preset=(
+                (os.environ.get("PRV_QUERY_PRESET") or "").strip().lower() or None
+            ),
         )
 
 

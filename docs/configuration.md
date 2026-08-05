@@ -25,22 +25,24 @@ PersonalRAGVault reads settings from **environment variables**. Copy [`.env.exam
 | `PRV_INGEST_BATCH_SIZE` | `500` | Chunks per embed+upsert wave during streaming ingest (min 10) |
 | `PRV_INGEST_EXCLUDE_DIRS` | _(empty)_ | Extra directory **names** merged into the built-in skip set for **recursive** discovery (comma-separated, matched against any path component under the ingest root). Built-ins: `.obsidian`, `.git`, `.venv`, `venv`, `node_modules`, `__pycache__`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `.tox`, `.hg`, `.svn`, `.idea`, `.vscode`. Example: `vendor,dist,.trash` |
 | `PRV_USE_FILE_CACHE` | `true` | Skip unchanged files on re-ingest |
-| `PRV_USE_FTS` | `true` | Maintain SQLite FTS5 sidecar for hybrid/BM25 |
+| `PRV_USE_FTS` | `true` | Maintain SQLite FTS5 sidecar; **hybrid search uses FTS ranks** (BM25 in-memory only as fallback) |
 | `PRV_USE_EMBEDDING_CACHE` | `true` | Cache embeddings by chunk content hash |
-| `PRV_HYBRID` | `false` | Default hybrid (BM25 + vector RRF). Surfaces as `Settings.hybrid_default`. **API:** `POST /query` uses this when the client omits `hybrid`. **CLI/UI:** pass `--hybrid` / checkbox, or callers should use `get_settings().hybrid_default` when the user has not overridden. Explicit true/false in the request body still wins |
-| `PRV_HYBRID_FETCH_LIMIT` | `5000` | Max corpus rows fetched for hybrid BM25 (lower on huge vaults) |
+| `PRV_HYBRID` | `false` | Default hybrid (vector + FTS/BM25 RRF). Surfaces as `Settings.hybrid_default`. **API:** `POST /query` uses this when the client omits `hybrid`. **CLI/UI:** `--hybrid` / checkbox |
+| `PRV_QUERY_PRESET` | _(unset)_ | Default query preset: `fast` \| `balanced` \| `quality` (see CLI `presets`). Applied when flags would otherwise stay off |
+| `PRV_HYBRID_FETCH_LIMIT` | `5000` | Cap for BM25 fallback corpus fetch and hybrid candidate width |
 | `PRV_HYBRID_RRF_K` | `60` | RRF constant for hybrid / multi-query fusion |
 | `PRV_HNSW_SEARCH_EF` | `100` | Chroma HNSW search breadth (higher = slower, more accurate) |
 | `PRV_HNSW_M` | `16` | Chroma HNSW graph degree |
-| `PRV_MULTI_QUERY` | `false` | Fuse multiple query variants (RRF) |
+| `PRV_MULTI_QUERY` | `false` | Fuse multiple query variants (RRF); composes with hybrid when both on |
 | `PRV_EXPAND_QUERY_OLLAMA` | `false` | Ollama rewrites for multi-query |
-| `PRV_RERANK` | `false` | Cross-encoder rerank (sentence-transformers) |
+| `PRV_RERANK` | `false` | Cross-encoder rerank (cached in-process) |
 | `PRV_RERANK_CANDIDATES` | `20` | Candidates to rerank before top-k trim |
-| `PRV_PARENT_EXPAND` | `false` | Merge neighboring chunks by `parent_id` |
+| `PRV_PARENT_EXPAND` | `false` | Merge neighboring chunks by `parent_id` (metadata filter, not full scan) |
 | `PRV_RESPONSE_CACHE` | `true` | Cache non-stream query answers (invalidated on ingest/purge) |
 | `PRV_RESPONSE_CACHE_TTL` | `3600` | Response cache TTL in seconds (min 1) |
 | `PRV_RESPONSE_CACHE_MAX` | `1000` | Max cached query entries (min 1) |
-| `PRV_API_TOKEN` | _(unset)_ | Optional bearer token for HTTP API. **Off by default** (local-first). When set (non-empty), all routes require `Authorization: Bearer <token>` **except** `GET /health` and `GET /version`. Prefer loopback bind even with a token |
+| `PRV_API_TOKEN` | _(unset)_ | Optional bearer token for HTTP API. **Off by default** (local-first). Constant-time compare. When set, all routes require Bearer **except** `/health` and `/version` |
+| `PRV_API_ALLOW_OUTSIDE_HOME` | `false` | When true, API may honor `allow_outside_home` on `/ingest` |
 
 ## Examples
 

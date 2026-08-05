@@ -59,3 +59,12 @@ def test_ingest_exclude_dirs_extra_from_env(monkeypatch):
     assert "drafts" in s.ingest_exclude_dirs
     assert "tmp_build" in s.ingest_exclude_dirs
     assert ".obsidian" in s.ingest_exclude_dirs
+
+
+def test_query_preset_from_env(monkeypatch):
+    monkeypatch.setenv("PRV_QUERY_PRESET", "Balanced")
+    reset_settings()
+    assert Settings.from_env().query_preset == "balanced"
+    monkeypatch.delenv("PRV_QUERY_PRESET", raising=False)
+    reset_settings()
+    assert Settings.from_env().query_preset is None

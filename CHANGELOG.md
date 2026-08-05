@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-08-05
+
+### Added
+- **FTS5 wired into hybrid search** — keyword leg prefers SQLite FTS (`search_fts` + RRF with vector); BM25 corpus rebuild is fallback only
+- **Query quality presets** — `fast` / `balanced` / `quality` via `--preset`, `PRV_QUERY_PRESET`, API `preset`, UI select, `personalragvault presets`
+- **API SSE streaming** — `POST /query/stream` (meta / token / done events)
+- **API `GET /presets`**
+- Parent expand fetches siblings via `get_by_where({"parent_id": ...})` (no full-corpus scan)
+- Multi-query composes with hybrid (each variant can run vector+FTS RRF)
+- Query-aware context compression (sentence pick prefers query-term overlap)
+- Cross-encoder reranker process-level cache (`get_reranker` / `reset_reranker`)
+- Constant-time API token compare (`secrets.compare_digest`)
+- API hardening: `allow_outside_home` requires `PRV_API_ALLOW_OUTSIDE_HOME=1`
+- Status/doctor messaging for FTS hybrid path and query presets
+
+### Improved
+- Chunk IDs use `source:index:content_hash` (stable for unchanged text; no full-text in id payload)
+- Hybrid merge preserves RRF scores alongside distances
+- Large-vault doctor tips recommend `--preset balanced` and FTS hybrid
+
+### Fixed
+- FTS index was write-only (never used at query time)
+- Reranker reloaded the CrossEncoder on every query
+- Multi-query path ignored hybrid entirely
+
 ## [1.4.1] - 2026-08-03
 
 ### Fixed

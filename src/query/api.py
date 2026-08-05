@@ -7,10 +7,12 @@ Endpoints:
 - GET  /version  (no auth)
 - GET  /status
 - POST /query
+- POST /query/stream  (SSE token stream)
 - POST /ingest
 - GET  /cache/stats
 - POST /cache/clear
 - GET  /graph/neighbors
+- GET  /presets
 
 Optional auth: set non-empty ``PRV_API_TOKEN`` to require
 ``Authorization: Bearer <token>`` on all routes except /health and /version.
@@ -18,18 +20,21 @@ Optional auth: set non-empty ``PRV_API_TOKEN`` to require
 
 from __future__ import annotations
 
+import json
 import os
+import secrets
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from src.core.vault import get_status_info, preview_ingest, run_ingest, run_query
 from src.store.response_cache import get_response_cache, reset_response_cache
 
 _PACKAGE_NAME = "personalragvault"
-_FALLBACK_VERSION = "1.4.1"
+_FALLBACK_VERSION = "1.5.0"
 
 
 def get_package_version() -> str:
@@ -64,7 +69,7 @@ def require_api_token(
     """Optional bearer guard. Reads PRV_API_TOKEN each request (no reload).
 
     When unset or empty, auth is disabled (local-first). /health and /version
-    are always public.
+    are always public. Token compare is constant-time.
     """
     path = request.url.path
     if path in ("/health", "/version"):
@@ -79,7 +84,9 @@ def require_api_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     provided = authorization[7:].strip()
-    if provided != token:
+    # Constant-time compare; pad to equal length only for compare_digest requirement
+    # when lengths differ, still reject without leaking via early return timing of ==
+    if len(provided) != len(token) or not secrets.compare_digest(provided, token):
         raise HTTPException(
             status_code=401,
             detail="Invalid API token",
@@ -115,6 +122,10 @@ class QueryRequest(BaseModel):
     where_year: Optional[int] = None
     source_contains: Optional[str] = None
     extension: Optional[str] = None
+    preset: Optional[str] = Field(
+        default=None,
+        description="Query quality preset: fast | balanced | quality",
+    )
 
 
 class QueryResponse(BaseModel):
@@ -124,6 +135,7 @@ class QueryResponse(BaseModel):
     llm_error: Optional[str] = None
     timings: Dict[str, Any]
     cached: bool = False
+    flags: Optional[Dict[str, Any]] = None
 
 
 class IngestRequest(BaseModel):
@@ -144,29 +156,41 @@ def version_endpoint() -> Dict[str, str]:
     return {"version": get_package_version()}
 
 
+@app.get("/presets")
+def presets_endpoint() -> Dict[str, Any]:
+    from src.retrieval.presets import list_query_presets
+
+    return {"presets": list_query_presets()}
+
+
+def _run_query_from_request(req: QueryRequest, stream: bool = False) -> Dict[str, Any]:
+    from src.core.vault import build_where_from_options
+
+    where = build_where_from_options(
+        where_year=req.where_year,
+        source_contains=req.source_contains,
+        extension=req.extension,
+    )
+    return run_query(
+        req.question,
+        top_k=req.top_k,
+        max_distance=req.max_distance,
+        where=where,
+        hybrid=req.hybrid,
+        use_llm=req.use_llm,
+        multi_query=req.multi_query,
+        expand_query=req.expand_query,
+        rerank=req.rerank,
+        parent_expand=req.parent_expand,
+        stream=stream,
+        preset=req.preset,
+    )
+
+
 @app.post("/query", response_model=QueryResponse)
 def query_endpoint(req: QueryRequest) -> QueryResponse:
     try:
-        from src.core.vault import build_where_from_options
-
-        where = build_where_from_options(
-            where_year=req.where_year,
-            source_contains=req.source_contains,
-            extension=req.extension,
-        )
-        result = run_query(
-            req.question,
-            top_k=req.top_k,
-            max_distance=req.max_distance,
-            where=where,
-            hybrid=req.hybrid,
-            use_llm=req.use_llm,
-            multi_query=req.multi_query,
-            expand_query=req.expand_query,
-            rerank=req.rerank,
-            parent_expand=req.parent_expand,
-            stream=False,
-        )
+        result = _run_query_from_request(req, stream=False)
         return QueryResponse(
             results=result.get("results", []),
             answer=result.get("answer"),
@@ -174,30 +198,89 @@ def query_endpoint(req: QueryRequest) -> QueryResponse:
             llm_error=result.get("llm_error"),
             timings=result.get("timings") or {},
             cached=bool(result.get("cached")),
+            flags=result.get("flags"),
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
+@app.post("/query/stream")
+def query_stream_endpoint(req: QueryRequest) -> StreamingResponse:
+    """SSE stream: meta event, token events, done event.
+
+    Events:
+      data: {"type":"meta","results":[...],"timings":{...},"flags":{...}}
+      data: {"type":"token","text":"..."}
+      data: {"type":"done","answer":"..."}
+      data: {"type":"error","detail":"..."}
+    """
+
+    def event_gen():
+        try:
+            result = _run_query_from_request(req, stream=bool(req.use_llm))
+            meta = {
+                "type": "meta",
+                "results": result.get("results", []),
+                "context": result.get("context"),
+                "timings": result.get("timings") or {},
+                "flags": result.get("flags"),
+                "llm_error": result.get("llm_error"),
+            }
+            yield f"data: {json.dumps(meta, default=str)}\n\n"
+
+            if result.get("llm_error"):
+                yield f"data: {json.dumps({'type': 'error', 'detail': result['llm_error']})}\n\n"
+                return
+
+            stream_gen = result.get("answer_stream")
+            full = ""
+            if stream_gen is not None:
+                for token in stream_gen:
+                    full += token
+                    yield f"data: {json.dumps({'type': 'token', 'text': token})}\n\n"
+            else:
+                full = result.get("answer") or ""
+                if full:
+                    yield f"data: {json.dumps({'type': 'token', 'text': full})}\n\n"
+
+            yield f"data: {json.dumps({'type': 'done', 'answer': full})}\n\n"
+        except Exception as exc:
+            yield f"data: {json.dumps({'type': 'error', 'detail': str(exc)})}\n\n"
+
+    return StreamingResponse(event_gen(), media_type="text/event-stream")
+
+
 @app.post("/ingest")
 def ingest_endpoint(req: IngestRequest) -> Dict[str, Any]:
     try:
+        # Hardening: allow_outside_home over API requires explicit env opt-in
+        allow = req.allow_outside_home
+        if allow and not _env_bool("PRV_API_ALLOW_OUTSIDE_HOME", False):
+            raise HTTPException(
+                status_code=403,
+                detail=(
+                    "allow_outside_home rejected by API. "
+                    "Set PRV_API_ALLOW_OUTSIDE_HOME=1 to enable."
+                ),
+            )
         path = Path(req.path).expanduser()
         if req.dry_run:
             return preview_ingest(
                 path,
                 recursive=req.recursive,
-                allow_outside_home=req.allow_outside_home,
+                allow_outside_home=allow,
                 force=req.force,
             )
         count = run_ingest(
             path,
             recursive=req.recursive,
             force=req.force,
-            allow_outside_home=req.allow_outside_home,
+            allow_outside_home=allow,
             show_progress=False,
         )
         return {"ingested_chunks": count}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 

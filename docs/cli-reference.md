@@ -78,24 +78,34 @@ personalragvault query "QUESTION" [options]
 |--------|-------------|
 | `--top-k` / `-k` | Number of chunks to retrieve (default: 5, max: `PRV_MAX_TOP_K`) |
 | `--no-llm` | Print retrieved context only |
-| `--hybrid` | BM25 + vector RRF fusion (API also defaults from `PRV_HYBRID`; see configuration) |
+| `--hybrid` / `--no-hybrid` | Vector + FTS5 (BM25 fallback) RRF; default from `PRV_HYBRID` |
 | `--max-distance` | Drop chunks with distance above threshold |
 | `--where-year` | Filter by metadata year |
 | `--source-contains` | Filter sources containing substring |
 | `--extension` | Filter by file extension |
 | `--filter` | Raw Chroma `where` JSON |
-| `--multi-query` | Fuse multiple query variants (RRF) |
+| `--multi-query` | Fuse multiple query variants (RRF); composes with hybrid |
 | `--expand-query` | Ollama query rewrite (with `--multi-query`) |
-| `--rerank` | Cross-encoder rerank |
-| `--parent-expand` | Expand hits with sibling chunks |
+| `--rerank` | Cross-encoder rerank (model cached in-process) |
+| `--parent-expand` | Expand hits with sibling chunks by `parent_id` |
+| `--preset` | Quality preset: `fast` \| `balanced` \| `quality` (or `PRV_QUERY_PRESET`) |
 | `--output` / `-o` | Write results JSON |
 
 `PRV_HYBRID=true` sets `Settings.hybrid_default`. The HTTP API applies that default when `hybrid` is omitted from `POST /query`. CLI still accepts explicit `--hybrid`.
+
+**Presets** (also `personalragvault presets`):
+
+| Preset | Hybrid | Multi | Rerank | Parent |
+|--------|--------|-------|--------|--------|
+| `fast` | · | · | · | · |
+| `balanced` | ✓ | · | ✓ | · |
+| `quality` | ✓ | ✓ | ✓ | ✓ |
 
 **Examples:**
 
 ```bash
 personalragvault query "invoices from Acme Corp"
+personalragvault query "roadmap" --preset balanced --no-llm
 personalragvault -q query "python asyncio patterns" --top-k 10 --no-llm
 personalragvault query "roadmap" --hybrid --no-llm
 ```
@@ -200,8 +210,9 @@ personalragvault reindex PATH [--recursive] [--allow-outside-home] [--yes]
 
 Local FastAPI HTTP API (localhost by default).
 
-**Endpoints:** `GET /health`, `GET /status`, `GET /version` (package version), `POST /query`, `POST /ingest`, `GET /graph/neighbors?note=…`, `GET /cache/stats`, `POST /cache/clear`. OpenAPI UI: `http://HOST:PORT/docs`.
+**Endpoints:** `GET /health`, `GET /status`, `GET /version`, `GET /presets`, `POST /query`, `POST /query/stream` (SSE), `POST /ingest`, `GET /graph/neighbors?note=…`, `GET /cache/stats`, `POST /cache/clear`. OpenAPI UI: `http://HOST:PORT/docs`.
 
+`POST /ingest` with `allow_outside_home: true` requires `PRV_API_ALLOW_OUTSIDE_HOME=1`.
 ```bash
 personalragvault serve [--host 127.0.0.1] [--port 8765] [--reload]
 ```

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List, Set
+
+logger = logging.getLogger(__name__)
 
 
 def _neighbor_window(
@@ -24,6 +27,19 @@ def _neighbor_window(
     return siblings[:max_chunks]
 
 
+def _siblings_for_parent(parent_id: str) -> List[Dict[str, Any]]:
+    """Fetch sibling chunks by parent_id metadata (no full-corpus scan)."""
+    from src.store.vectorstore import get_by_where
+
+    try:
+        rows = get_by_where({"parent_id": parent_id}, limit=500)
+    except Exception as exc:
+        logger.debug("parent expand get_by_where failed for %s: %s", parent_id, exc)
+        return []
+    rows.sort(key=lambda r: int((r.get("metadata") or {}).get("chunk_index", 0)))
+    return rows
+
+
 def expand_parent_chunks(
     results: List[Dict[str, Any]],
     max_chars: int | None = None,
@@ -32,25 +48,13 @@ def expand_parent_chunks(
     if not results:
         return []
     from src.config import get_settings
-    from src.store.vectorstore import fetch_corpus
 
     settings = get_settings()
     limit = max_chars or settings.max_context_chars
-    corpus = fetch_corpus(limit=100_000)
-    by_parent: Dict[str, List[Dict[str, Any]]] = {}
-    for row in corpus:
-        meta = row.get("metadata") or {}
-        pid = str(meta.get("parent_id", ""))
-        if pid:
-            by_parent.setdefault(pid, []).append(row)
-
-    for pid in by_parent:
-        by_parent[pid].sort(
-            key=lambda r: int((r.get("metadata") or {}).get("chunk_index", 0))
-        )
 
     seen_parents: Set[str] = set()
     expanded: List[Dict[str, Any]] = []
+    sibling_cache: Dict[str, List[Dict[str, Any]]] = {}
 
     for hit in results:
         meta = hit.get("metadata") or {}
@@ -59,7 +63,11 @@ def expand_parent_chunks(
             expanded.append(hit)
             continue
         seen_parents.add(pid)
-        siblings = by_parent.get(pid, [hit])
+
+        if pid not in sibling_cache:
+            sibling_cache[pid] = _siblings_for_parent(pid)
+        siblings = sibling_cache[pid] or [hit]
+
         idx = int(meta.get("chunk_index", 0))
         window = _neighbor_window(siblings, idx, max_chunks=3)
         merged_text = "\n\n".join(s["text"] for s in window if s.get("text"))

@@ -62,17 +62,70 @@ def build_context(
     return "\n\n".join(parts)
 
 
-def _extract_key_sentences(text: str, max_sentences: int = 4) -> str:
-    """Very lightweight sentence extraction for compression (no extra models)."""
-    # Split on sentence boundaries
+def _query_terms(query: Optional[str]) -> set[str]:
+    if not query:
+        return set()
+    stop = {
+        "a",
+        "an",
+        "the",
+        "is",
+        "are",
+        "was",
+        "were",
+        "what",
+        "when",
+        "where",
+        "who",
+        "how",
+        "why",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "and",
+        "or",
+        "my",
+        "me",
+        "i",
+        "do",
+        "does",
+        "did",
+        "with",
+        "from",
+        "about",
+    }
+    return {
+        w
+        for w in re.findall(r"[A-Za-z0-9_]{3,}", query.lower())
+        if w not in stop
+    }
+
+
+def _extract_key_sentences(
+    text: str,
+    max_sentences: int = 4,
+    query: Optional[str] = None,
+) -> str:
+    """Lightweight sentence extraction; prefers query-term overlap when query given."""
     sentences = re.split(r"(?<=[.!?])\s+", text.strip())
     sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
     if len(sentences) <= max_sentences:
         return text.strip()
-    # Prefer longer, information-dense sentences
-    scored = sorted(sentences, key=lambda s: (len(s) > 60, len(s)), reverse=True)
+
+    terms = _query_terms(query)
+
+    def score(s: str) -> tuple:
+        lower = s.lower()
+        overlap = sum(1 for t in terms if t in lower) if terms else 0
+        # Prefer relevance, then moderate length (info density without giant dumps)
+        length_bonus = 1 if 40 <= len(s) <= 280 else 0
+        return (overlap, length_bonus, min(len(s), 400))
+
+    scored = sorted(sentences, key=score, reverse=True)
     selected = scored[:max_sentences]
-    # Preserve rough original order
     order = {s: i for i, s in enumerate(sentences)}
     selected.sort(key=lambda s: order.get(s, 999))
     return " ".join(selected)
@@ -82,6 +135,7 @@ def build_tagged_context(
     results: List[Dict[str, Any]],
     max_chars: int,
     compress: bool = True,
+    query: Optional[str] = None,
 ) -> str:
     """
     Build context with explicit [Source: ...] tags for citations.
@@ -97,7 +151,7 @@ def build_tagged_context(
 
         raw_text = r["text"].strip()
         if compress and len(raw_text) > 400:
-            text = _extract_key_sentences(raw_text)
+            text = _extract_key_sentences(raw_text, query=query)
         else:
             text = raw_text
 

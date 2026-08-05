@@ -20,5 +20,7 @@ def test_stable_chunk_ids():
     a = make_chunk_id("/tmp/f.txt", 0, "hello")
     b = make_chunk_id("/tmp/f.txt", 0, "hello")
     c = make_chunk_id("/tmp/f.txt", 1, "hello")
+    d = make_chunk_id("/tmp/f.txt", 0, "hello!")
     assert a == b
     assert a != c
+    assert a != d  # content hash changes with text

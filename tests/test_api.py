@@ -84,13 +84,14 @@ def test_query_validation_error():
     assert r2.status_code == 422
 
 
-def test_ingest_dry_run_mocked():
+def test_ingest_dry_run_mocked(monkeypatch):
     preview = {
         "path": "/tmp/docs",
         "files": 2,
         "chunks_estimate": 10,
         "dry_run": True,
     }
+    monkeypatch.setenv("PRV_API_ALLOW_OUTSIDE_HOME", "1")
     client = TestClient(app)
     with patch("src.query.api.preview_ingest", return_value=preview) as mock_pi:
         r = client.post(
@@ -108,6 +109,57 @@ def test_ingest_dry_run_mocked():
     args, kwargs = mock_pi.call_args
     assert kwargs.get("recursive") is True
     assert kwargs.get("allow_outside_home") is True
+
+
+def test_ingest_outside_home_blocked_without_env(monkeypatch):
+    monkeypatch.delenv("PRV_API_ALLOW_OUTSIDE_HOME", raising=False)
+    client = TestClient(app)
+    r = client.post(
+        "/ingest",
+        json={
+            "path": "/tmp/docs",
+            "dry_run": True,
+            "allow_outside_home": True,
+        },
+    )
+    assert r.status_code == 403
+
+
+def test_presets_endpoint():
+    client = TestClient(app)
+    r = client.get("/presets")
+    assert r.status_code == 200
+    names = {p["name"] for p in r.json()["presets"]}
+    assert names == {"fast", "balanced", "quality"}
+
+
+def test_query_stream_sse_mocked():
+    def fake_stream():
+        yield "Hello "
+        yield "world"
+
+    fixed = {
+        "results": [{"text": "hit", "metadata": {}, "distance": 0.1}],
+        "answer": None,
+        "context": "ctx",
+        "llm_error": None,
+        "answer_stream": fake_stream(),
+        "timings": {"retrieval": 0.01, "total": 0.02},
+        "cached": False,
+        "flags": {"hybrid": True},
+    }
+    client = TestClient(app)
+    with patch("src.query.api.run_query", return_value=fixed):
+        r = client.post(
+            "/query/stream",
+            json={"question": "hi", "use_llm": True},
+        )
+    assert r.status_code == 200
+    body = r.text
+    assert "text/event-stream" in r.headers.get("content-type", "") or "data:" in body
+    assert '"type": "meta"' in body or '"type":"meta"' in body
+    assert "Hello" in body
+    assert '"type": "done"' in body or '"type":"done"' in body
 
 
 def test_auth_required(monkeypatch):

@@ -237,6 +237,11 @@ def query(
     parent_expand: bool = typer.Option(
         False, "--parent-expand", help="Expand hits with neighboring chunks"
     ),
+    preset: Optional[str] = typer.Option(
+        None,
+        "--preset",
+        help="Query quality preset: fast | balanced | quality (or PRV_QUERY_PRESET)",
+    ),
     output: Optional[Path] = typer.Option(
         None, "--output", "-o", help="Write query results as JSON"
     ),
@@ -244,6 +249,7 @@ def query(
     """Query your personal knowledge base with RAG + Ollama."""
     settings = get_settings()
     use_hybrid = settings.hybrid_default if hybrid is None else hybrid
+    use_preset = preset if preset is not None else settings.query_preset
     if top_k > settings.max_top_k:
         _stderr.print(
             f"[red]Error:[/red] top_k cannot exceed {settings.max_top_k} (set PRV_MAX_TOP_K)"
@@ -279,6 +285,7 @@ def query(
             rerank=rerank,
             parent_expand=parent_expand,
             stream=not no_llm and not _quiet,   # beautiful streaming by default in interactive CLI
+            preset=use_preset,
         )
     except RuntimeError as exc:
         _stderr.print(f"[red]Error:[/red] {exc}")
@@ -429,6 +436,33 @@ def rerankers_list() -> None:
     console.print("\n[dim]Install with: pip install \"personalragvault[retrieval]\"[/dim]")
 
 
+@app.command("presets")
+def query_presets_list() -> None:
+    """List query quality presets (fast / balanced / quality)."""
+    from src.retrieval.presets import list_query_presets
+
+    table = Table(title="Query quality presets")
+    table.add_column("Preset")
+    table.add_column("Hybrid")
+    table.add_column("Multi")
+    table.add_column("Rerank")
+    table.add_column("Parent")
+    table.add_column("Description")
+    for row in list_query_presets():
+        table.add_row(
+            row["name"],
+            "✓" if row["hybrid"] else "·",
+            "✓" if row["multi_query"] else "·",
+            "✓" if row["rerank"] else "·",
+            "✓" if row["parent_expand"] else "·",
+            row["description"],
+        )
+    console.print(table)
+    console.print("\nUsage:")
+    console.print("  personalragvault query \"...\" --preset balanced")
+    console.print("  export PRV_QUERY_PRESET=balanced")
+
+
 @config_app.command("show")
 def config_show() -> None:
     """Show effective configuration (env vars + loaded TOML file)."""
@@ -519,6 +553,13 @@ def status() -> None:
     console.print(f"  Caches: file={info.use_file_cache} fts={info.use_fts} "
         f"embed={info.use_embedding_cache} response={info.response_cache_enabled}"
     )
+    if info.use_fts:
+        console.print(
+            "  [dim]FTS: wired into hybrid search (vector + FTS RRF; BM25 fallback)[/dim]"
+        )
+    qp = get_settings().query_preset
+    if qp:
+        console.print(f"  Query preset default: {qp}")
     console.print(
         f"  Defaults: hybrid={info.hybrid_default} "
         f"ingest_exclude_dirs={info.ingest_exclude_dir_count}"

@@ -17,7 +17,14 @@ logger = logging.getLogger(__name__)
 
 
 def make_chunk_id(source: str, chunk_index: int, text: str) -> str:
-    payload = f"{source}:{chunk_index}:{text}".encode("utf-8")
+    """Stable-ish chunk id: source + index + content hash (not full text inline).
+
+    Using a content hash keeps IDs deterministic for unchanged text while avoiding
+    embedding huge payloads into the id string. Small edits still change the id
+    (correct for cache invalidation); re-ingest deletes by source first.
+    """
+    content_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+    payload = f"{source}:{chunk_index}:{content_hash}".encode("utf-8")
     return hashlib.sha256(payload).hexdigest()[:32]
 
 

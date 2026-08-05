@@ -89,8 +89,19 @@ with tab_query:
     top_k = st.slider("Top K", 1, 20, 5)
     from src.config import get_settings as _get_settings
 
-    _hybrid_default = _get_settings().hybrid_default
-    hybrid = st.checkbox("Hybrid search (BM25 + vector)", value=_hybrid_default)
+    _settings = _get_settings()
+    _hybrid_default = _settings.hybrid_default
+    preset_options = ["(none)", "fast", "balanced", "quality"]
+    if _settings.query_preset in preset_options:
+        _preset_default = _settings.query_preset
+    else:
+        _preset_default = "(none)"
+    preset_choice = st.selectbox(
+        "Query preset",
+        preset_options,
+        index=preset_options.index(_preset_default),
+    )
+    hybrid = st.checkbox("Hybrid search (vector + FTS/BM25)", value=_hybrid_default)
     no_llm = st.checkbox("Retrieval only (no Ollama)")
     multi_query = st.checkbox("Multi-query fusion")
     rerank = st.checkbox("Cross-encoder rerank")
@@ -140,6 +151,7 @@ with tab_query:
                     parent_expand=parent_expand,
                     history=history,
                     stream=not no_llm,  # Enable streaming when using LLM
+                    preset=None if preset_choice == "(none)" else preset_choice,
                 )
 
             # Handle streaming LLM response
