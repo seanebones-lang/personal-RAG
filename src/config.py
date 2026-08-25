@@ -49,6 +49,34 @@ def _bool_env(name: str, default: bool) -> bool:
     return raw.strip().lower() in ("1", "true", "yes", "on")
 
 
+def _load_dotenv_files() -> None:
+    """Lightweight .env loader (no dependency). Sets only vars not already in environ.
+
+    Loads, in order of increasing precedence (later path overrides earlier if a
+    var is missing after each file is applied): the project-root .env and
+    ~/.personalragvault/.env. Never overwrites already-set environment variables.
+    """
+    candidates = [
+        Path(".env"),
+        Path("~/.personalragvault/.env").expanduser(),
+    ]
+    for path in candidates:
+        if not path.exists() or not path.is_file():
+            continue
+        try:
+            for line in path.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key = key.strip()
+                value = value.strip().strip("\"'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+        except OSError:
+            continue
+
+
 # Default directory names skipped during recursive ingest discovery (case-sensitive path parts).
 DEFAULT_INGEST_EXCLUDE_DIRS: frozenset[str] = frozenset(
     {
@@ -123,6 +151,10 @@ class Settings:
     embed_preset: str | None
     ollama_host: str
     ollama_model: str
+    llm_provider: str
+    openai_base_url: str
+    openai_model: str
+    openai_api_key: str
     max_file_bytes: int
     chunk_size: int
     chunk_overlap: int
@@ -186,6 +218,15 @@ class Settings:
             embed_preset=preset,
             ollama_host=os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434"),
             ollama_model=os.environ.get("OLLAMA_MODEL", "llama3.2"),
+            llm_provider=os.environ.get("PRV_LLM_PROVIDER", "openai"),
+            openai_base_url=os.environ.get(
+                "PRV_OPENAI_BASE_URL", "https://integrate.api.nvidia.com/v1"
+            ),
+            openai_model=os.environ.get(
+                "PRV_OPENAI_MODEL", "deepseek-ai/deepseek-v4-flash-0731"
+            ),
+            openai_api_key=os.environ.get("PRV_OPENAI_API_KEY")
+            or os.environ.get("NVIDIA_API_KEY", ""),
             max_file_bytes=_int_env("PRV_MAX_FILE_BYTES", 52_428_800, minimum=1),
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
@@ -317,3 +358,6 @@ def _apply_config_file_to_env() -> None:
 
 # Apply config file very early (before first get_settings call in normal flow)
 _apply_config_file_to_env()
+
+# Load project/home .env files for provider settings before from_env reads them
+_load_dotenv_files()

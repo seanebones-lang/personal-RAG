@@ -2,18 +2,124 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 from typing import Any, Dict, List, Optional, Tuple
+
+import httpx
 
 from src.config import get_settings
 
 logger = logging.getLogger(__name__)
 
 
-def check_ollama_model() -> None:
-    """Raise RuntimeError if Ollama is unreachable or model is missing."""
+def _provider() -> str:
+    return get_settings().llm_provider
+
+
+def _openai_chat(
+    messages: List[Dict[str, str]],
+    timeout: float = 180.0,
+) -> str:
+    """Call an OpenAI-compatible /chat/completions endpoint (e.g. NVIDIA NIM).
+
+    Used when llm_provider == 'openai'. Non-streaming: returns the full response
+    content string. For streaming use _openai_chat_stream.
+    """
     settings = get_settings()
+    if not settings.openai_api_key:
+        raise RuntimeError(
+            "No API key for OpenAI-compatible provider. "
+            "Set PRV_OPENAI_API_KEY or NVIDIA_API_KEY."
+        )
+    url = settings.openai_base_url.rstrip("/") + "/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {settings.openai_api_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": settings.openai_model,
+        "messages": messages,
+        "stream": False,
+    }
+
+    resp = httpx.post(url, headers=headers, json=payload, timeout=timeout)
+    if resp.status_code >= 400:
+        raise RuntimeError(
+            f"OpenAI-compatible endpoint error {resp.status_code}: {resp.text[:300]}"
+        )
+    parsed = resp.json()
+    return str(parsed["choices"][0]["message"]["content"])
+
+
+def _openai_chat_stream(
+    messages: List[Dict[str, str]],
+    timeout: float = 180.0,
+):
+    """Streaming OpenAI-compatible chat. Yields text chunks as they arrive."""
+    settings = get_settings()
+    if not settings.openai_api_key:
+        raise RuntimeError(
+            "No API key for OpenAI-compatible provider. "
+            "Set PRV_OPENAI_API_KEY or NVIDIA_API_KEY."
+        )
+    url = settings.openai_base_url.rstrip("/") + "/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {settings.openai_api_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": settings.openai_model,
+        "messages": messages,
+        "stream": True,
+    }
+
+    with httpx.stream(
+        "POST",
+        url,
+        headers=headers,
+        json=payload,
+        timeout=timeout,
+    ) as resp:
+        if resp.status_code >= 400:
+            body = resp.read().decode("utf-8", "replace")[:300]
+            raise RuntimeError(
+                f"OpenAI-compatible endpoint error {resp.status_code}: {body}"
+            )
+        for line in resp.iter_lines():
+            if not line or not line.startswith("data: "):
+                continue
+            data = line[len("data: "):].strip()
+            if data == "[DONE]":
+                break
+            try:
+                chunk = json.loads(data)
+            except json.JSONDecodeError:
+                continue
+            delta = chunk.get("choices", [{}])[0].get("delta", {})
+            content = delta.get("content")
+            if content:
+                yield content
+
+
+def check_ollama_model() -> None:
+    """Raise RuntimeError if the configured LLM provider/model is unavailable.
+
+    For the default 'openai' provider this only asserts a key is present (the
+    endpoint is validated on first chat). For 'ollama' it checks the local
+    server and model (legacy path).
+    """
+    settings = get_settings()
+    if settings.llm_provider == "openai":
+        if not settings.openai_api_key:
+            raise RuntimeError(
+                "No API key for OpenAI-compatible provider. "
+                "Set PRV_OPENAI_API_KEY or NVIDIA_API_KEY."
+            )
+        return
+
+    # Legacy local Ollama path
     try:
         import ollama
     except ImportError as exc:
@@ -182,9 +288,6 @@ def generate_answer(
     history: list of (user_question, assistant_answer) pairs.
     """
     settings = get_settings()
-    import ollama
-
-    client = ollama.Client(host=settings.ollama_host)
 
     messages: List[Dict[str, str]] = []
 
@@ -208,6 +311,13 @@ def generate_answer(
 
     messages.append({"role": "user", "content": prompt})
 
+    if settings.llm_provider == "openai":
+        return _openai_chat(messages)
+
+    import ollama
+
+    client = ollama.Client(host=settings.ollama_host)
+
     response = client.chat(
         model=settings.ollama_model,
         messages=messages,
@@ -226,9 +336,6 @@ def generate_answer_stream(
     Use this for much better perceived performance in CLI and UI.
     """
     settings = get_settings()
-    import ollama
-
-    client = ollama.Client(host=settings.ollama_host)
 
     messages: List[Dict[str, str]] = []
 
@@ -250,6 +357,14 @@ def generate_answer_stream(
                 messages.append({"role": "assistant", "content": assistant_a})
 
     messages.append({"role": "user", "content": prompt})
+
+    if settings.llm_provider == "openai":
+        yield from _openai_chat_stream(messages)
+        return
+
+    import ollama
+
+    client = ollama.Client(host=settings.ollama_host)
 
     stream = client.chat(
         model=settings.ollama_model,
