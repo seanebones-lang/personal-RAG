@@ -23,10 +23,10 @@ Keep datasets local. Do not commit personal eval files to public repos.
 ## Run evaluation
 
 ```bash
-personalragvault eval run --dataset ./my_eval.jsonl
-personalragvault eval run --dataset ./my_eval.jsonl --hybrid --top-k 10
-personalragvault eval run --dataset ./my_eval.jsonl --multi-query --rerank
-personalragvault eval run --dataset ./my_eval.jsonl --output results.json
+personalragvault eval run ./my_eval.jsonl
+personalragvault eval run ./my_eval.jsonl --hybrid --top-k 10
+personalragvault eval run ./my_eval.jsonl --multi-query --rerank
+personalragvault eval run ./my_eval.jsonl --output results.json
 ```
 
 ## Metrics
