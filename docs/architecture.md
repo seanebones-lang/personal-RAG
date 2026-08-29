@@ -24,10 +24,10 @@ flowchart TB
         embed_q[embed_query]
         search[search]
         context[build_context]
-        ollama[Ollama chat]
+        generate[Configured generation provider]
         CLI_query --> embed_q --> search
         search --> chroma
-        search --> context --> ollama
+        search --> context --> generate
     end
 ```
 
@@ -43,7 +43,7 @@ flowchart TB
 | [`src/ingest/watcher.py`](../src/ingest/watcher.py) | Debounced filesystem watch |
 | [`src/embed/embedder.py`](../src/embed/embedder.py) | sentence-transformers (CPU) |
 | [`src/store/vectorstore.py`](../src/store/vectorstore.py) | ChromaDB client, upsert, search |
-| [`src/ollama_client.py`](../src/ollama_client.py) | Model preflight, prompt generation |
+| [`src/ollama_client.py`](../src/ollama_client.py) | Local Ollama and explicit external-provider generation |
 
 ## Ingest flow (detail)
 
@@ -60,17 +60,17 @@ flowchart TB
 2. **Vector search** in Chroma (`n_results = min(top_k, collection.count())`).
 3. Optional **distance filter** via `--max-distance`.
 4. **Context assembly** — join chunks up to `PRV_MAX_CONTEXT_CHARS`.
-5. **Ollama** — unless `--no-llm`; preflight checks host and model name.
+5. **Generation provider** — unless `--no-llm`; local Ollama is the default. Explicit `PRV_LLM_PROVIDER=openai` configuration sends the assembled context to that external endpoint.
 
 ## Design choices
 
 | Choice | Rationale |
 |--------|-----------|
-| Local ChromaDB | No server setup; data stays on disk |
+| Local ChromaDB | No database server setup; the retrieval index stays on disk |
 | MiniLM embeddings | Small, fast on CPU (~22M parameters) |
 | Character chunking | Simple, no extra tokenizer dependency |
 | Upsert + delete-by-source | Safe re-ingest without duplicate chunks |
-| No HTTP API | Scope: personal CLI tool, not a hosted service |
+| Loopback HTTP API | Optional FastAPI service binds to localhost by default |
 
 ## Extending the project
 

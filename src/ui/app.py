@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from src.config import CHUNK_STRATEGIES
+from src.config import CHUNK_STRATEGIES, get_settings
 from src.core.vault import (
     build_where_from_options,
     get_status_info,
@@ -24,7 +24,16 @@ st.set_page_config(page_title="PersonalRAGVault", page_icon="🔒", layout="wide
 init_session()
 
 st.title("PersonalRAGVault")
-st.caption("Local-only. Data stays on your machine. Do not expose this port to the network.")
+_startup_settings = get_settings()
+st.caption(
+    "Retrieval and storage are local. Generation provider: "
+    f"{_startup_settings.llm_provider}. Do not expose this port to the network."
+)
+if _startup_settings.llm_provider == "openai":
+    st.warning(
+        "External generation is enabled. Retrieved context is included in prompts and leaves "
+        "this machine. Select retrieval-only mode or set PRV_LLM_PROVIDER=ollama for private data."
+    )
 
 render_history_sidebar()
 
@@ -46,7 +55,9 @@ with tab_status:
             "embed_dim": info.embed_dim,
             "chunk_strategy": info.chunk_strategy,
             "hnsw_search_ef": info.hnsw_search_ef,
-            "ollama": f"{info.ollama_host} / {info.ollama_model}",
+            "generation_provider": info.generation_provider,
+            "generation_endpoint": info.generation_endpoint,
+            "generation_model": info.generation_model,
         }
     )
     if st.button("Purge vault", type="primary"):
@@ -102,7 +113,7 @@ with tab_query:
         index=preset_options.index(_preset_default),
     )
     hybrid = st.checkbox("Hybrid search (vector + FTS/BM25)", value=_hybrid_default)
-    no_llm = st.checkbox("Retrieval only (no Ollama)")
+    no_llm = st.checkbox("Retrieval only (do not call generation provider)")
     multi_query = st.checkbox("Multi-query fusion")
     rerank = st.checkbox("Cross-encoder rerank")
     parent_expand = st.checkbox("Parent document expand")

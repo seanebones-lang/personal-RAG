@@ -68,3 +68,22 @@ def test_query_preset_from_env(monkeypatch):
     monkeypatch.delenv("PRV_QUERY_PRESET", raising=False)
     reset_settings()
     assert Settings.from_env().query_preset is None
+
+
+def test_llm_provider_defaults_to_local_ollama(monkeypatch):
+    monkeypatch.delenv("PRV_LLM_PROVIDER", raising=False)
+    reset_settings()
+    assert Settings.from_env().llm_provider == "ollama"
+
+
+def test_llm_provider_openai_is_explicit_opt_in(monkeypatch):
+    monkeypatch.setenv("PRV_LLM_PROVIDER", "OPENAI")
+    reset_settings()
+    assert Settings.from_env().llm_provider == "openai"
+
+
+def test_llm_provider_rejects_unknown_value(monkeypatch):
+    monkeypatch.setenv("PRV_LLM_PROVIDER", "mystery")
+    reset_settings()
+    with pytest.raises(ValueError, match="PRV_LLM_PROVIDER"):
+        Settings.from_env()

@@ -8,11 +8,14 @@ from src.config import reset_settings
 runner = CliRunner()
 
 
-def test_status_command():
+def test_status_command(monkeypatch):
+    monkeypatch.setenv("PRV_LLM_PROVIDER", "ollama")
+    reset_settings()
     result = runner.invoke(app, ["status"])
     assert result.exit_code == 0
     assert "PersonalRAGVault status" in result.stdout
     assert "hybrid=" in result.stdout
+    assert "Generation: LOCAL ollama" in result.stdout
 
 
 @patch("src.cli.run_ingest", return_value=0)

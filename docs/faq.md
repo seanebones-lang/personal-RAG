@@ -49,7 +49,7 @@ Set `PRV_EMBED_MODEL` or `OLLAMA_MODEL`. After changing the embed model, **purge
 - Check `OLLAMA_HOST`
 - Pull the model: `ollama pull llama3.2`
 
-### I do not want to use Ollama
+### I do not want to use a generation provider
 
 ```bash
 personalragvault query "your question" --no-llm
@@ -63,7 +63,9 @@ Vectors and chunk text: `PRV_DB_PATH` (default `~/.personalragvault/chroma`). Or
 
 ### Does anything go to the cloud?
 
-Not by default. The embedding model may download from Hugging Face on first use. Ollama runs locally. No telemetry is sent by this app’s Chroma config.
+Not by default after required models are present. The embedding model may download from Hugging Face on first use. Files, embeddings, and the retrieval index stay local, Ollama runs locally, and this app disables Chroma anonymized telemetry.
+
+If you explicitly set `PRV_LLM_PROVIDER=openai`, the retrieved context used for generated answers is sent to the configured external endpoint. Use `--no-llm` for a retrieval-only query with no generation-provider request.
 
 ### How do I back up?
 

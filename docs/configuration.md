@@ -11,6 +11,10 @@ PersonalRAGVault reads settings from **environment variables**. Copy [`.env.exam
 | `PRV_EMBED_PRESET` | `mini` (when no explicit model) | Preset id (`mini`, `bge-small`, …); see `models list` |
 | `OLLAMA_HOST` | `http://127.0.0.1:11434` | Ollama API base URL |
 | `OLLAMA_MODEL` | `llama3.2` | Model name for `ollama chat` |
+| `PRV_LLM_PROVIDER` | `ollama` | Answer generation provider: `ollama` (local) or `openai` (external OpenAI-compatible endpoint) |
+| `PRV_OPENAI_BASE_URL` | `https://integrate.api.nvidia.com/v1` | External endpoint used only when `PRV_LLM_PROVIDER=openai` |
+| `PRV_OPENAI_MODEL` | `deepseek-ai/deepseek-v4-flash-0731` | External model used only when `PRV_LLM_PROVIDER=openai` |
+| `PRV_OPENAI_API_KEY` | _(unset)_ | External-provider key; falls back to `NVIDIA_API_KEY` |
 | `PRV_MAX_FILE_BYTES` | `52428800` (50 MiB) | Skip files larger than this |
 | `PRV_CHUNK_STRATEGY` | `char` | `char`, `recursive`, `prose`, `semantic_embed` (`semantic` → `prose`) |
 | `PRV_CHUNK_STRATEGY_BY_EXT` | _(empty)_ | e.g. `.md:recursive,.py:recursive` |
@@ -19,7 +23,7 @@ PersonalRAGVault reads settings from **environment variables**. Copy [`.env.exam
 | `PRV_CHUNK_OVERLAP` | `120` | Overlap between chunks (must be &lt; chunk size) |
 | `PRV_CHUNK_MIN_SIZE` | `200` | Min size for `recursive` / `semantic` |
 | `PRV_CHUNK_MAX_SIZE` | `800` | Max size for `recursive` / `semantic` |
-| `PRV_MAX_CONTEXT_CHARS` | `12000` | Max retrieved text sent to Ollama |
+| `PRV_MAX_CONTEXT_CHARS` | `12000` | Max retrieved text supplied to the configured generation provider |
 | `PRV_MAX_TOP_K` | `50` | Upper bound for CLI `--top-k` |
 | `PRV_EMBED_BATCH_SIZE` | `32` | Embeddings per encoder batch |
 | `PRV_INGEST_BATCH_SIZE` | `500` | Chunks per embed+upsert wave during streaming ingest (min 10) |
@@ -52,6 +56,18 @@ PersonalRAGVault reads settings from **environment variables**. Copy [`.env.exam
 export OLLAMA_MODEL=mistral
 personalragvault query "hello"
 ```
+
+**Explicitly opt in to an external generation provider:**
+
+```bash
+export PRV_LLM_PROVIDER=openai
+export PRV_OPENAI_BASE_URL=https://integrate.api.nvidia.com/v1
+export PRV_OPENAI_MODEL=deepseek-ai/deepseek-v4-flash-0731
+export PRV_OPENAI_API_KEY=your-key
+personalragvault query "hello"
+```
+
+This sends the retrieved context for generated answers to the configured endpoint. Use `--no-llm` to keep a query retrieval-only and make no generation-provider request.
 
 **Store the vault on an external drive:**
 
@@ -99,6 +115,7 @@ personalragvault ingest ~/Downloads
 Settings are validated at startup (via `src/config.py`):
 
 - `PRV_CHUNK_OVERLAP` must be less than `PRV_CHUNK_SIZE`
+- `PRV_LLM_PROVIDER` must be `ollama` or `openai`
 - Integer env vars must parse and meet minimum bounds
 
 Invalid config raises `ValueError` with a clear message.

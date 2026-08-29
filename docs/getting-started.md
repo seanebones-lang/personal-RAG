@@ -1,12 +1,12 @@
 # Getting started
 
-PersonalRAGVault is a **local-only** CLI: your files stay on your machine, embeddings run on CPU, and answers can use a local [Ollama](https://ollama.com/) model.
+PersonalRAGVault is a **local-first** CLI: files, embeddings, and the retrieval index stay on your machine. Generated answers default to a local [Ollama](https://ollama.com/) model. You may explicitly configure an external OpenAI-compatible provider, in which case the retrieved context for generated answers leaves the machine.
 
 ## Prerequisites
 
 | Requirement | Notes |
 |-------------|--------|
-| **Python 3.10+** | Check with `python3 --version` |
+| **Python 3.10–3.12** | Check with `python3 --version`; these versions are tested in CI |
 | **Git** | To clone the repository |
 | **Disk space** | ~500MB+ for Python deps; more for the embedding model cache |
 | **Ollama** (optional) | Required for generated answers; skip with `--no-llm` |
@@ -91,11 +91,13 @@ First ingest downloads the embedding model from Hugging Face and may take severa
 personalragvault query "What notes do I have about RAG?"
 ```
 
-Retrieval only (no Ollama):
+Retrieval only (no generation-provider request):
 
 ```bash
 personalragvault query "summarize my PDFs" --no-llm
 ```
+
+For sensitive vaults, start with `--no-llm`. If `PRV_LLM_PROVIDER=openai` is configured, generated-answer requests send retrieved context to the configured external endpoint; see [Configuration](configuration.md).
 
 ## 7. Watch a folder (optional)
 

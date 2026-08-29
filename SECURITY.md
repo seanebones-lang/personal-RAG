@@ -24,6 +24,7 @@ We aim to acknowledge reports within 7 days.
 
 - Run ingest only on folders you trust; the tool reads file contents
 - Keep Ollama bound to localhost unless you understand the risk of exposing it
+- Local Ollama is the default generation provider. If you explicitly configure `PRV_LLM_PROVIDER=openai`, retrieved context is sent to that external endpoint; use `--no-llm` for retrieval-only queries
 - Do not commit `.env` or personal vault data (`~/.personalragvault/`)
 - Pin or audit dependencies for production deployments
 

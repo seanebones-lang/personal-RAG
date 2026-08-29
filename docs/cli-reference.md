@@ -24,7 +24,7 @@ personalragvault query "hello" -q
 |------|-------------|
 | `--verbose` / `-v` | INFO logging |
 | `--quiet` / `-q` | Minimal output |
-| `--debug` | Show sensitive fallback context on Ollama errors |
+| `--debug` | Show sensitive fallback context on generation-provider errors |
 
 Exit codes: `0` success, `1` operational failure, `2` usage/validation error.
 
@@ -68,7 +68,7 @@ personalragvault ingest ~/Documents/Vault --recursive --dry-run
 
 ## `query`
 
-Search the vault and optionally generate an answer with Ollama.
+Search the vault and optionally generate an answer with the configured provider.
 
 ```bash
 personalragvault query "QUESTION" [options]
@@ -77,7 +77,7 @@ personalragvault query "QUESTION" [options]
 | Option | Description |
 |--------|-------------|
 | `--top-k` / `-k` | Number of chunks to retrieve (default: 5, max: `PRV_MAX_TOP_K`) |
-| `--no-llm` | Print retrieved context only |
+| `--no-llm` | Print retrieved context only; make no generation-provider request |
 | `--hybrid` / `--no-hybrid` | Vector + FTS5 (BM25 fallback) RRF; default from `PRV_HYBRID` |
 | `--max-distance` | Drop chunks with distance above threshold |
 | `--where-year` | Filter by metadata year |
@@ -85,7 +85,7 @@ personalragvault query "QUESTION" [options]
 | `--extension` | Filter by file extension |
 | `--filter` | Raw Chroma `where` JSON |
 | `--multi-query` | Fuse multiple query variants (RRF); composes with hybrid |
-| `--expand-query` | Ollama query rewrite (with `--multi-query`) |
+| `--expand-query` | Configured-provider query rewrite (with `--multi-query`) |
 | `--rerank` | Cross-encoder rerank (model cached in-process) |
 | `--parent-expand` | Expand hits with sibling chunks by `parent_id` |
 | `--preset` | Quality preset: `fast` \| `balanced` \| `quality` (or `PRV_QUERY_PRESET`) |

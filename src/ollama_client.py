@@ -1,4 +1,4 @@
-"""Ollama generation helpers."""
+"""Generation helpers for local Ollama and explicit external providers."""
 
 from __future__ import annotations
 

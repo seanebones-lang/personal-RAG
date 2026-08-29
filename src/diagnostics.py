@@ -67,24 +67,49 @@ def check_embedding_dimension_consistency() -> CheckResult:
     )
 
 
-def check_ollama_health() -> CheckResult:
+def check_generation_provider_health() -> CheckResult:
     from src.ollama_client import check_ollama_model
+
+    settings = get_settings()
+    if settings.llm_provider == "openai":
+        if not settings.openai_api_key:
+            return CheckResult(
+                "Generation provider",
+                ok=False,
+                message="External OpenAI-compatible provider has no API key",
+                detail="Set PRV_OPENAI_API_KEY or use PRV_LLM_PROVIDER=ollama/--no-llm.",
+            )
+        return CheckResult(
+            "Generation provider",
+            ok=True,
+            message=(
+                f"EXTERNAL ({settings.openai_model} @ {settings.openai_base_url})"
+            ),
+            detail=(
+                "Generated-answer prompts include retrieved context and leave this machine. "
+                "Use PRV_LLM_PROVIDER=ollama or --no-llm for private vaults."
+            ),
+        )
 
     try:
         check_ollama_model()
-        settings = get_settings()
         return CheckResult(
-            "Ollama",
+            "Generation provider",
             ok=True,
-            message=f"OK ({settings.ollama_model} @ {settings.ollama_host})",
+            message=f"LOCAL Ollama ({settings.ollama_model} @ {settings.ollama_host})",
         )
     except Exception as exc:
         return CheckResult(
-            "Ollama",
+            "Generation provider",
             ok=False,
-            message="Ollama check failed",
+            message="Local Ollama check failed",
             detail=str(exc),
         )
+
+
+def check_ollama_health() -> CheckResult:
+    """Backward-compatible alias for callers using the old diagnostic name."""
+    return check_generation_provider_health()
 
 
 def check_disk_space() -> CheckResult:
@@ -162,7 +187,7 @@ def run_full_diagnostics(chunk_count: int = 0) -> List[CheckResult]:
     results: List[CheckResult] = []
 
     results.append(check_embedding_dimension_consistency())
-    results.append(check_ollama_health())
+    results.append(check_generation_provider_health())
     results.append(check_disk_space())
     results.append(check_caches())
 

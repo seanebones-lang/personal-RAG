@@ -6,13 +6,13 @@
 
 **Local-first RAG for your personal files.** Ingest PDFs, notes, code, and exports from a folder on your machine, embed them with a lightweight CPU model, store vectors in ChromaDB, and query with natural language—optionally answered by a local [Ollama](https://ollama.com/) model.
 
-No cloud. No account. Your data stays on your disk.
+Retrieval and storage stay on your machine. Generated answers default to local Ollama; an OpenAI-compatible external endpoint is available only by explicit configuration and receives the retrieved context used for an answer. Use `--no-llm` for retrieval with no generation-provider request.
 
 If this project helps you, consider starring the repo on GitHub.
 
 ## Why PersonalRAGVault?
 
-- **Private** — runs entirely on your Mac or Linux machine
+- **Private by default** — local storage, local embeddings, local Ollama generation
 - **Simple** — one CLI, no Docker or database server to operate
 - **Practical** — chunking, dedup on re-ingest, folder watch, retrieval-only mode
 - **Hackable** — small Python codebase, documented for contributors
@@ -186,6 +186,7 @@ Copy [`.env.example`](.env.example) to `.env` or export variables. Key settings:
 |----------|---------|
 | `PRV_DB_PATH` | `~/.personalragvault/chroma` |
 | `PRV_EMBED_MODEL` | `sentence-transformers/all-MiniLM-L6-v2` (~22M params) |
+| `PRV_LLM_PROVIDER` | `ollama` (local; `openai` is explicit external opt-in) |
 | `OLLAMA_MODEL` | `llama3.2` |
 
 Full list: [docs/configuration.md](docs/configuration.md)

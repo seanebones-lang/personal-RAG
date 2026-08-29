@@ -72,7 +72,7 @@ def expand_queries_heuristic(query: str, max_variants: int = 3) -> List[str]:
 
 
 def expand_queries_ollama(query: str) -> List[str]:
-    """Ask Ollama for one alternate phrasing."""
+    """Ask the configured generation provider for one alternate phrasing."""
     from src.ollama_client import generate_answer
 
     prompt = (

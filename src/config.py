@@ -10,6 +10,7 @@ from src.embed.presets import resolve_embed_model
 from src.retrieval.reranker_presets import resolve_reranker_model
 
 CHUNK_STRATEGIES = frozenset({"char", "recursive", "semantic", "prose", "semantic_embed"})
+LLM_PROVIDERS = frozenset({"ollama", "openai"})
 
 
 def _expand_path(value: str) -> Path:
@@ -200,6 +201,12 @@ class Settings:
         chunk_min = _int_env("PRV_CHUNK_MIN_SIZE", 200, minimum=50)
         chunk_max = _int_env("PRV_CHUNK_MAX_SIZE", chunk_size, minimum=chunk_min)
         strategy = normalize_chunk_strategy(os.environ.get("PRV_CHUNK_STRATEGY", "char"))
+        llm_provider = os.environ.get("PRV_LLM_PROVIDER", "ollama").strip().lower()
+        if llm_provider not in LLM_PROVIDERS:
+            raise ValueError(
+                f"PRV_LLM_PROVIDER must be one of {sorted(LLM_PROVIDERS)}, "
+                f"got {llm_provider!r}"
+            )
 
         preset = os.environ.get("PRV_EMBED_PRESET")
         explicit_model = os.environ.get("PRV_EMBED_MODEL")
@@ -218,7 +225,7 @@ class Settings:
             embed_preset=preset,
             ollama_host=os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434"),
             ollama_model=os.environ.get("OLLAMA_MODEL", "llama3.2"),
-            llm_provider=os.environ.get("PRV_LLM_PROVIDER", "openai"),
+            llm_provider=llm_provider,
             openai_base_url=os.environ.get(
                 "PRV_OPENAI_BASE_URL", "https://integrate.api.nvidia.com/v1"
             ),

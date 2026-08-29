@@ -12,9 +12,11 @@ personalragvault ingest ~/Documents/MyVault --recursive
 
 ## What is extracted
 
-- YAML frontmatter (`title`, `tags`, `date`, `aliases`) → metadata fields `fm_*`
+- Simple YAML frontmatter (`title`, `tags`, `date`, `aliases`, `type`, `status`, `priority`, `area`, `source`, `updated`) → metadata fields `fm_*`
 - `#tags` in body → `obsidian_tags`
 - Markdown headings used for `section_title` when using recursive/semantic chunking
+
+Scalar values and simple lists are stored as strings compatible with Chroma metadata. Nested mappings and complex YAML values are ignored rather than flattened unpredictably.
 
 ## Chunking tip
 

@@ -60,6 +60,9 @@ class StatusInfo:
     embed_preset: Optional[str]
     ollama_host: str
     ollama_model: str
+    generation_provider: str
+    generation_endpoint: str
+    generation_model: str
     chunk_size: int
     chunk_overlap: int
     use_file_cache: bool
@@ -89,6 +92,13 @@ def get_status_info() -> StatusInfo:
         embed_preset=preset.name if preset else None,
         ollama_host=settings.ollama_host,
         ollama_model=settings.ollama_model,
+        generation_provider=settings.llm_provider,
+        generation_endpoint=(
+            settings.openai_base_url if settings.llm_provider == "openai" else settings.ollama_host
+        ),
+        generation_model=(
+            settings.openai_model if settings.llm_provider == "openai" else settings.ollama_model
+        ),
         chunk_size=settings.chunk_size,
         chunk_overlap=settings.chunk_overlap,
         use_file_cache=settings.use_file_cache,

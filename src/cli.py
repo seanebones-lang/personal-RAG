@@ -210,7 +210,11 @@ def ingest(
 def query(
     q: str = typer.Argument(..., help="Natural language question"),
     top_k: int = typer.Option(5, "--top-k", "-k", min=1, help="Chunks to retrieve"),
-    no_llm: bool = typer.Option(False, "--no-llm", help="Retrieval only; do not call Ollama"),
+    no_llm: bool = typer.Option(
+        False,
+        "--no-llm",
+        help="Retrieval only; do not call the configured generation provider",
+    ),
     hybrid: Optional[bool] = typer.Option(
         None,
         "--hybrid/--no-hybrid",
@@ -231,7 +235,9 @@ def query(
     ),
     multi_query: bool = typer.Option(False, "--multi-query", help="Fuse multiple query variants"),
     expand_query: bool = typer.Option(
-        False, "--expand-query", help="Use Ollama for extra query variants (with --multi-query)"
+        False,
+        "--expand-query",
+        help="Use the configured generation provider for query variants (with --multi-query)",
     ),
     rerank: bool = typer.Option(False, "--rerank", help="Cross-encoder rerank candidates"),
     parent_expand: bool = typer.Option(
@@ -246,7 +252,7 @@ def query(
         None, "--output", "-o", help="Write query results as JSON"
     ),
 ) -> None:
-    """Query your personal knowledge base with RAG + Ollama."""
+    """Query your knowledge base; generation uses the configured provider."""
     settings = get_settings()
     use_hybrid = settings.hybrid_default if hybrid is None else hybrid
     use_preset = preset if preset is not None else settings.query_preset
@@ -375,7 +381,7 @@ def query(
             for c in citations[:8]:
                 console.print(f"  [dim]•[/dim] {c}")
     elif out["llm_error"]:
-        _stderr.print(f"[yellow]Ollama error:[/yellow] {out['llm_error']}")
+        _stderr.print(f"[yellow]Generation provider error:[/yellow] {out['llm_error']}")
         if _debug:
             console.print("\n[yellow]Raw retrieved context:[/yellow]")
             for r in results:
@@ -473,7 +479,10 @@ def config_show() -> None:
     console.print(f"  DB path: {s.db_path}")
     console.print(f"  Embed model: {s.embed_model} (preset={s.embed_preset})")
     console.print(f"  Chunk strategy: {s.chunk_strategy}")
-    console.print(f"  Ollama: {s.ollama_host} / {s.ollama_model}")
+    endpoint = s.openai_base_url if s.llm_provider == "openai" else s.ollama_host
+    model = s.openai_model if s.llm_provider == "openai" else s.ollama_model
+    locality = "EXTERNAL" if s.llm_provider == "openai" else "LOCAL"
+    console.print(f"  Generation: {locality} {s.llm_provider} / {model} @ {endpoint}")
     console.print(f"  Max context chars: {s.max_context_chars}")
     console.print("\n[dim]Advanced retrieval defaults can be overridden per-query.[/dim]")
     console.print(
@@ -546,7 +555,16 @@ def status() -> None:
     if info.embed_preset:
         console.print(f"  Active preset: {info.embed_preset}")
     console.print(f"  Embed dimension: {info.embed_dim or 'not set'}")
-    console.print(f"  Ollama: {info.ollama_host} / {info.ollama_model}")
+    locality = "EXTERNAL" if info.generation_provider == "openai" else "LOCAL"
+    console.print(
+        f"  Generation: {locality} {info.generation_provider} / "
+        f"{info.generation_model} @ {info.generation_endpoint}"
+    )
+    if info.generation_provider == "openai":
+        console.print(
+            "  [yellow]Privacy: generated-answer prompts include retrieved context "
+            "and leave this machine. Use --no-llm or PRV_LLM_PROVIDER=ollama.[/yellow]"
+        )
     console.print(f"  Chunk strategy: {info.chunk_strategy}")
     console.print(f"  Chunk size / overlap: {info.chunk_size} / {info.chunk_overlap}")
     console.print(f"  HNSW search_ef: {info.hnsw_search_ef}")
@@ -595,10 +613,10 @@ def doctor() -> None:
             console.print(f"    [dim]{r.detail}[/dim]")
 
     # First-time setup guidance
-    if info.chunk_count == 0:
+    if info.chunk_count == 0 and info.generation_provider == "ollama":
         console.print("\n[bold yellow]First-time setup tips:[/bold yellow]")
         console.print("  1. Pull a model:  ollama pull qwen3-coder:30b  (or llama3.2)")
-        console.print("  2. Set model:     export PRV_OLLAMA_MODEL=qwen3-coder:30b")
+        console.print("  2. Set model:     export OLLAMA_MODEL=qwen3-coder:30b")
         console.print("  3. Ingest data:   personalragvault ingest ~/Documents --recursive")
         console.print("  4. Launch UI:     personalragvault ui")
 
