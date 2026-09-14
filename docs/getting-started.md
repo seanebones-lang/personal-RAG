@@ -64,7 +64,7 @@ python -m src.cli status
 
 ```bash
 # Install from https://ollama.com/ then:
-ollama pull llama3.2
+ollama pull llama3.2:1b
 ```
 
 Use a different model by setting `OLLAMA_MODEL` (see [Configuration](configuration.md)).

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **CLI entry point** — Fixed `personalragvault` command by updating wrapper script to inject project root into `sys.path` (prevented `ModuleNotFoundError: No module named 'src'`)
+
+### Changed
+- Default Ollama model updated to `llama3.2:1b` (faster, smaller footprint for local development)
+
 ## [1.5.0] - 2026-08-05
 
 ### Added
@@ -126,7 +132,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-05-30
 
 ### Added
-
 - Eval: NDCG@k, `personalragvault eval generate` for synthetic datasets
 - Chunking: `semantic_embed`, `prose` alias, `PRV_CHUNK_STRATEGY_BY_EXT`, `--chunk-strategy` on ingest
 - Retrieval: `--multi-query`, `--expand-query`, `--rerank`, `--parent-expand` (+ env defaults)

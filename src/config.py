@@ -224,7 +224,7 @@ class Settings:
             embed_model=embed_model,
             embed_preset=preset,
             ollama_host=os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434"),
-            ollama_model=os.environ.get("OLLAMA_MODEL", "llama3.2"),
+            ollama_model=os.environ.get("OLLAMA_MODEL", "llama3.2:1b"),
             llm_provider=llm_provider,
             openai_base_url=os.environ.get(
                 "PRV_OPENAI_BASE_URL", "https://integrate.api.nvidia.com/v1"

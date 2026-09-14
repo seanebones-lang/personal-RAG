@@ -34,7 +34,7 @@ source .venv/bin/activate
    ```bash
    ollama pull qwen3-coder:30b
    # or
-   ollama pull llama3.2
+   ollama pull llama3.2:1b
    ```
 
 3. Set your generation model (optional):

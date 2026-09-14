@@ -73,7 +73,7 @@ cd personal-RAG
 pip install -e ".[ui]"          # Streamlit web interface
 pip install -e ".[ocr]"         # OCR for scanned PDFs and images (requires tesseract)
 
-ollama pull llama3.2        # optional; skip if using --no-llm
+ollama pull llama3.2:1b       # optional; skip if using --no-llm (faster, smaller model)
 
 personalragvault doctor          # recommended first step
 personalragvault ingest ~/Downloads
@@ -187,7 +187,7 @@ Copy [`.env.example`](.env.example) to `.env` or export variables. Key settings:
 | `PRV_DB_PATH` | `~/.personalragvault/chroma` |
 | `PRV_EMBED_MODEL` | `sentence-transformers/all-MiniLM-L6-v2` (~22M params) |
 | `PRV_LLM_PROVIDER` | `ollama` (local; `openai` is explicit external opt-in) |
-| `OLLAMA_MODEL` | `llama3.2` |
+|| `OLLAMA_MODEL` | `llama3.2:1b` |
 
 Full list: [docs/configuration.md](docs/configuration.md)
 

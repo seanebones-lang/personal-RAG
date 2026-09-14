@@ -10,7 +10,7 @@ PersonalRAGVault reads settings from **environment variables**. Copy [`.env.exam
 | `PRV_EMBED_MODEL` | `sentence-transformers/all-MiniLM-L6-v2` | Hugging Face / ST model id |
 | `PRV_EMBED_PRESET` | `mini` (when no explicit model) | Preset id (`mini`, `bge-small`, …); see `models list` |
 | `OLLAMA_HOST` | `http://127.0.0.1:11434` | Ollama API base URL |
-| `OLLAMA_MODEL` | `llama3.2` | Model name for `ollama chat` |
+|| `OLLAMA_MODEL` | `llama3.2:1b` | Model name for `ollama chat` |
 | `PRV_LLM_PROVIDER` | `ollama` | Answer generation provider: `ollama` (local) or `openai` (external OpenAI-compatible endpoint) |
 | `PRV_OPENAI_BASE_URL` | `https://integrate.api.nvidia.com/v1` | External endpoint used only when `PRV_LLM_PROVIDER=openai` |
 | `PRV_OPENAI_MODEL` | `deepseek-ai/deepseek-v4-flash-0731` | External model used only when `PRV_LLM_PROVIDER=openai` |

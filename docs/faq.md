@@ -47,7 +47,7 @@ Set `PRV_EMBED_MODEL` or `OLLAMA_MODEL`. After changing the embed model, **purge
 
 - Start Ollama (app or `ollama serve`)
 - Check `OLLAMA_HOST`
-- Pull the model: `ollama pull llama3.2`
+- Pull the model: `ollama pull llama3.2:1b`
 
 ### I do not want to use a generation provider
 

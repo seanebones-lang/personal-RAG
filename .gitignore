@@ -47,3 +47,7 @@ htmlcov/
 .personalragvault/
 .demo-vault/
 obsidian-ak47/
+
+# Agent skills (environment-specific symlinks)
+.agents/
+.claude/
