@@ -6,7 +6,7 @@ PersonalRAGVault is a **local-first** CLI: files, embeddings, and the retrieval 
 
 | Requirement | Notes |
 |-------------|--------|
-| **Python 3.10–3.12** | Check with `python3 --version`; these versions are tested in CI |
+| **Python 3.10–3.12** | Check with `python3 --version`; use a supported Python; current CI runs 3.11 |
 | **Git** | To clone the repository |
 | **Disk space** | ~500MB+ for Python deps; more for the embedding model cache |
 | **Ollama** (optional) | Required for generated answers; skip with `--no-llm` |
@@ -41,9 +41,7 @@ source .venv/bin/activate
 **End users:**
 
 ```bash
-pip install -r requirements.txt
-# or
-pip install -e .
+python -m pip install -e .
 ```
 
 **Contributors (includes pytest, ruff, mypy):**
@@ -69,7 +67,16 @@ ollama pull llama3.2:1b
 
 Use a different model by setting `OLLAMA_MODEL` (see [Configuration](configuration.md)).
 
-## 5. Ingest your files
+## 5. Try the included sample first
+
+```bash
+./scripts/try-demo.sh
+```
+
+This uses a separate sample index and calls no generation provider. See
+[the sample walkthrough](TRY_DEMO.md) before adding private files.
+
+## 6. Ingest your files
 
 Put or point at a folder with supported files (PDF, TXT, MD, JSON, DOCX, code, etc.):
 
@@ -85,7 +92,7 @@ Options:
 
 First ingest downloads the embedding model from Hugging Face and may take several minutes.
 
-## 6. Query
+## 7. Query
 
 ```bash
 personalragvault query "What notes do I have about RAG?"
@@ -99,7 +106,7 @@ personalragvault query "summarize my PDFs" --no-llm
 
 For sensitive vaults, start with `--no-llm`. If `PRV_LLM_PROVIDER=openai` is configured, generated-answer requests send retrieved context to the configured external endpoint; see [Configuration](configuration.md).
 
-## 7. Watch a folder (optional)
+## 8. Watch a folder (optional)
 
 Automatically re-ingest when files change:
 

@@ -383,7 +383,8 @@ def _run_query_impl(
         parent_expand = parent_expand or qp.parent_expand
 
     use_multi = multi_query or settings.multi_query
-    use_expand = expand_query or settings.expand_query_ollama
+    # Retrieval-only mode also forbids generation requests for query expansion.
+    use_expand = use_llm and (expand_query or settings.expand_query_ollama)
     use_rerank = rerank or settings.rerank
     use_parent = parent_expand or settings.parent_expand
     # hybrid stays as passed (CLI already applied hybrid_default); preset may force on
