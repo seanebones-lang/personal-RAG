@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- An isolated synthetic first-use demo and sample walkthrough; optional `--ui` setup.
+
 ### Fixed
+- Retrieval-only queries no longer contact a generation provider for model-based query expansion, even when expansion is enabled by flags or configuration.
+- Setup selects Python 3.10–3.12 and reports unsupported environments before installing.
 - **CLI entry point** — Fixed `personalragvault` command by updating wrapper script to inject project root into `sys.path` (prevented `ModuleNotFoundError: No module named 'src'`)
 
 ### Changed
