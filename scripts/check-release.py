@@ -3,6 +3,7 @@
 import ast
 import email
 import hashlib
+import os
 import sys
 import tarfile
 import zipfile
@@ -41,8 +42,11 @@ with tarfile.open(source) as archive:
         "docs/assets/demo-sample/notes.md",
     ):
         assert prefix + name in names, f"Missing first-use material: {name}"
-    info = archive.getmember(prefix + "scripts/setup.sh")
-    assert info.mode & 0o111, "Setup script must stay executable"
+    # Windows checkouts do not preserve POSIX executable bits. Published source
+    # archives are built and verified on a POSIX host; Windows uses PowerShell.
+    if os.name != "nt":
+        for script in ("scripts/setup.sh", "scripts/try-demo.sh"):
+            assert archive.getmember(prefix + script).mode & 0o111, script
     metadata = email.message_from_bytes(archive.extractfile(prefix + "PKG-INFO").read())
     assert metadata["Version"] == version
     assert not any(".env.local" in name or ".demo-vault" in name for name in names)
@@ -53,4 +57,3 @@ checksums = "".join(
 )
 (dist / "SHA256SUMS").write_text(checksums)
 print(f"Verified wheel/source version {version}, Python range and first-use contents.")
-
