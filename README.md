@@ -17,7 +17,7 @@ Requires Git and **Python 3.10–3.12**. The setup script selects a supported in
 Python; you can choose one explicitly with `PRV_PYTHON=python3.11`.
 
 ```bash
-git clone https://github.com/seanebones-lang/personal-RAG.git
+git clone --branch v1.5.1 --depth 1 https://github.com/seanebones-lang/personal-RAG.git
 cd personal-RAG
 ./scripts/setup.sh --ui
 ./scripts/try-demo.sh
@@ -40,9 +40,12 @@ PRV_DB_PATH="$PWD/.demo-vault/chroma" PRV_LLM_PROVIDER=ollama personalragvault u
 Open `http://127.0.0.1:8501`, select **Query**, check **Retrieval only**, and ask
 “What was the January invoice total?” See [the sample walkthrough](docs/TRY_DEMO.md).
 
-**Current source package:** 1.5.0. Existing GitHub release labels, including `v5.0`,
-are historical and do not identify this current source package. Use the source
-installation above while we prepare a release that matches the verified build.
+**Version:** 1.5.1. Use the [matching GitHub release](https://github.com/seanebones-lang/personal-RAG/releases/tag/v1.5.1)
+for a wheel, source archive, checksums, and installation notes. Run
+`personalragvault --version` to identify your installation. There is no PyPI
+publication promised by these instructions. The old `v5.0` tag contains package
+1.4.1; it is a historical label, not a newer distribution. See
+[release and verification guidance](docs/RELEASING.md).
 Independent usefulness and retrieval quality on your own files still need evaluation.
 
 ## Add your own folder

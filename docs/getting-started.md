@@ -6,7 +6,7 @@ PersonalRAGVault is a **local-first** CLI: files, embeddings, and the retrieval 
 
 | Requirement | Notes |
 |-------------|--------|
-| **Python 3.10–3.12** | Check with `python3 --version`; use a supported Python; current CI runs 3.11 |
+| **Python 3.10–3.12** | Check with `python3 --version`; use a supported Python; Linux CI checks each supported version |
 | **Git** | To clone the repository |
 | **Disk space** | ~500MB+ for Python deps; more for the embedding model cache |
 | **Ollama** (optional) | Required for generated answers; skip with `--no-llm` |
@@ -14,7 +14,7 @@ PersonalRAGVault is a **local-first** CLI: files, embeddings, and the retrieval 
 ## 1. Clone the repository
 
 ```bash
-git clone https://github.com/seanebones-lang/personal-RAG.git
+git clone --branch v1.5.1 --depth 1 https://github.com/seanebones-lang/personal-RAG.git
 cd personal-RAG
 ```
 
@@ -25,7 +25,7 @@ Use your fork URL if you cloned a fork.
 **Important:** run all commands from the directory that contains `pyproject.toml`. Do not create `.venv` in your home folder.
 
 ```bash
-python3 -m venv .venv
+python3.11 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 ```
 
@@ -53,6 +53,7 @@ pip install -e ".[dev]"
 Verify the CLI:
 
 ```bash
+personalragvault --version
 personalragvault status
 # fallback if PATH issues:
 python -m src.cli status

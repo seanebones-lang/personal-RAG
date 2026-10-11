@@ -1,14 +1,41 @@
 name: CI
 on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: 'pip'
+      - run: pip install -e ".[dev]"
+      - run: ruff check src tests
+      - run: pytest -m "not integration" --cov=src --cov-report=term-missing -q
+  package:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-      - run: pip install -e ".[dev]"
-      - run: ruff check src tests
-      - run: pytest -m "not integration" --cov=src --cov-report=term-missing -q
+      - run: python -m pip install build
+      - run: python -m build
+      - run: python scripts/check-release.py
+      - run: python -m pip install "./dist/personalragvault-1.5.1-py3-none-any.whl[ui]" httpx
+      - run: python scripts/smoke-installed.py 1.5.1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python-distributions-${{ matrix.os }}
+          path: dist/

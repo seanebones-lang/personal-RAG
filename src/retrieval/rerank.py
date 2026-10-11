@@ -28,7 +28,7 @@ def get_reranker(model_name: str):
     except ImportError as exc:
         raise RuntimeError(
             "Reranking requires sentence-transformers. "
-            "Install with: pip install personalragvault[retrieval]"
+            "Reinstall the base package from your source checkout or release wheel. See INSTALL.md."
         ) from exc
 
     resolved = resolve_reranker_model(model_name)
