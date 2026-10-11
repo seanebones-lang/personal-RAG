@@ -20,7 +20,9 @@ with tempfile.TemporaryDirectory(prefix="prv-installed-") as directory:
         from src.query.api import app
 
         installed = Path(src.__file__).resolve()
-        assert any(part in ("site-packages", "dist-packages") for part in installed.parts), installed
+        assert any(
+            part in ("site-packages", "dist-packages") for part in installed.parts
+        ), installed
         assert src.__version__ == expected == importlib.metadata.version("personalragvault")
         client = TestClient(app)
         assert client.get("/health").json()["status"] == "ok"

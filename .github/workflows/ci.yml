@@ -16,7 +16,7 @@ jobs:
           python-version: ${{ matrix.python }}
           cache: 'pip'
       - run: pip install -e ".[dev]"
-      - run: ruff check src tests
+      - run: ruff check src tests scripts/check-release.py scripts/smoke-installed.py
       - run: pytest -m "not integration" --cov=src --cov-report=term-missing -q
   package:
     runs-on: ${{ matrix.os }}
