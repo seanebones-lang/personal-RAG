@@ -22,6 +22,7 @@ personalragvault query "hello" -q
 
 | Flag | Description |
 |------|-------------|
+| `--version` | Print the package version and exit without a subcommand |
 | `--verbose` / `-v` | INFO logging |
 | `--quiet` / `-q` | Minimal output |
 | `--debug` | Show sensitive fallback context on generation-provider errors |

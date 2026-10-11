@@ -2,10 +2,17 @@ from unittest.mock import patch
 
 from typer.testing import CliRunner
 
+from src import __version__
 from src.cli import app
 from src.config import reset_settings
 
 runner = CliRunner()
+
+
+def test_version_without_subcommand():
+    result = runner.invoke(app, ["--version"])
+    assert result.exit_code == 0
+    assert result.stdout.strip() == f"PersonalRAGVault {__version__}"
 
 
 def test_status_command(monkeypatch):

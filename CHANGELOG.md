@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-10-10
+
+### Release and installation
+- Align module, CLI, API fallback, wheel and source versions using one package version.
+- Add `personalragvault --version`; declare Python 3.10–3.12 in package metadata.
+- Include setup scripts, documentation and synthetic sample in source distributions.
+- Build and inspect wheel/source archives in CI; smoke installed wheels outside the checkout on Linux and Windows.
+- Explain that historical `v5.0` contains package 1.4.1; preserve that old tag.
+- Add matching GitHub release instructions without assuming a PyPI publication.
+
 ### Added
 - An isolated synthetic first-use demo and sample walkthrough; optional `--ui` setup.
 

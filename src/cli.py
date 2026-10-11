@@ -11,6 +11,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from src import __version__
 from src.config import get_settings
 from src.core.vault import (
     build_where_from_options,
@@ -47,6 +48,12 @@ _quiet = False
 _debug = False
 
 
+def _show_version(value: bool) -> None:
+    if value:
+        console.print(f"PersonalRAGVault {__version__}")
+        raise typer.Exit()
+
+
 def _setup_logging(verbose: bool, quiet: bool) -> None:
     level = logging.WARNING
     if quiet:
@@ -62,6 +69,9 @@ def _setup_logging(verbose: bool, quiet: bool) -> None:
 
 @app.callback()
 def main(
+    version: bool = typer.Option(
+        False, "--version", callback=_show_version, is_eager=True, help="Show version and exit"
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Info logging"),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Minimal output"),
     debug: bool = typer.Option(False, "--debug", help="Show sensitive debug output"),
@@ -796,11 +806,14 @@ def watch(
 def ui(
     port: int = typer.Option(8501, "--port", help="Streamlit port"),
 ) -> None:
-    """Launch local web UI (requires pip install personalragvault[ui])."""
+    """Launch local web UI (install the [ui] extra from source or the release wheel)."""
     try:
         import streamlit.web.cli as stcli
     except ImportError as exc:
-        _stderr.print("[red]Streamlit not installed.[/red] Run: pip install personalragvault[ui]")
+        _stderr.print(
+            "[red]Streamlit not installed.[/red] Install the [ui] extra from your source "
+            "checkout or release wheel. See INSTALL.md."
+        )
         raise typer.Exit(code=1) from exc
 
     import sys

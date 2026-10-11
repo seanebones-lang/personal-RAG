@@ -8,7 +8,7 @@ retrieval quality across other collections or validate generated answers.
 Use Git and Python 3.10–3.12 on macOS or Linux:
 
 ```bash
-git clone https://github.com/seanebones-lang/personal-RAG.git
+git clone --branch v1.5.1 --depth 1 https://github.com/seanebones-lang/personal-RAG.git
 cd personal-RAG
 ./scripts/setup.sh --ui
 ./scripts/try-demo.sh

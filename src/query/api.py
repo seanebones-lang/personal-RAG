@@ -30,11 +30,12 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from src import __version__
 from src.core.vault import get_status_info, preview_ingest, run_ingest, run_query
 from src.store.response_cache import get_response_cache, reset_response_cache
 
 _PACKAGE_NAME = "personalragvault"
-_FALLBACK_VERSION = "1.5.0"
+_FALLBACK_VERSION = __version__
 
 
 def get_package_version() -> str:
