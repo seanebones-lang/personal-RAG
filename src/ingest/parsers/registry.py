@@ -8,6 +8,7 @@ from typing import Dict, List, Type
 
 from src.ingest.parsers.base import BaseParser, ExtractedDocument
 from src.ingest.parsers.bookmarks import BookmarksHTMLParser
+from src.ingest.parsers.csv_parser import CsvParser
 from src.ingest.parsers.eml import EmlParser
 from src.ingest.parsers.epub import EpubParser
 from src.ingest.parsers.ics import IcsParser
@@ -37,6 +38,7 @@ def _init_registry() -> None:
         return
     _register(EmlParser)
     _register(MboxParser)
+    _register(CsvParser)
     _register(TelegramParser)
     _register(IcsParser)
     _register(BookmarksHTMLParser)
