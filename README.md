@@ -1,1 +1,148 @@
-IyBQZXJzb25hbFJBR1ZhdWx0CgpDb250cmlidXRpbmcgd2l0aCBhbiBhZ2VudD8gUmVhZCBbQUdFTlRTLm1kXShBR0VOVFMubWQpIGZvciBzZXR1cCwgbG9jYWwgY2hlY2tzIGFuZCBwcm9qZWN0IGJvdW5kYXJpZXMuCgpbIVtDSV0oaHR0cHM6Ly9naXRodWIuY29tL3NlYW5lYm9uZXMtbGFuZy9wZXJzb25hbC1SQUcvYWN0aW9ucy93b3JrZmxvd3MvY2kueW1sL2JhZGdlLnN2ZyldKGh0dHBzOi8vZ2l0aHViLmNvbS9zZWFuZWJvbmVzLWxhbmcvcGVyc29uYWwtUkFHL2FjdGlvbnMvd29ya2Zsb3dzL2NpLnltbCkKWyFbTGljZW5zZTogTUlUXShodHRwczovL2ltZy5zaGllbGRzLmlvL2JhZGdlL0xpY2Vuc2UtTUlULWJsdWUuc3ZnKV0oTElDRU5TRSkKCioqRmluZCB0aGUgYW5zd2VyIGluIHlvdXIgb3duIGZpbGVzLioqIFBlcnNvbmFsUkFHVmF1bHQgc2VhcmNoZXMgUERGcywgbm90ZXMsIGNvZGUsCmFuZCBzYXZlZCBleHBvcnRzIG9uIHlvdXIgbWFjaGluZS4gSW5zcGVjdCB0aGUgbWF0Y2hpbmcgdGV4dCBhbmQgaXRzIHNvdXJjZSwgb3IKb3B0aW9uYWxseSBhc2sgYSBsb2NhbCBPbGxhbWEgbW9kZWwgdG8gY29tcG9zZSBhbiBhbnN3ZXIgZnJvbSB0aGUgcmV0cmlldmVkIGNvbnRleHQuCgpGcmVlIHVuZGVyIHRoZSBNSVQgbGljZW5zZS4gQnVpbHQgYnkgW05leHRFbGV2ZW5dKGh0dHBzOi8vd3d3Lm5leHRlbGV2ZW4uZGV2KS4KVGhpcyBpcyBhIGxvY2FsIFB5dGhvbiBhcHBsaWNhdGlvbiB3aXRoIGEgQ0xJLCBhbiBvcHRpb25hbCBicm93c2VyIGludGVyZmFjZSwgYW5kCmFuIEhUVFAgQVBJIGZvciBpbnRlZ3JhdGlvbnMuCgojIyBTdGFydCB3aXRoIHRoZSBzYW1wbGUsIG5vdCB5b3VyIGRvY3VtZW50cwoKUmVxdWlyZXMgR2l0IGFuZCAqKlB5dGhvbiAzLjEw4oCTMy4xMioqLiBUaGUgc2V0dXAgc2NyaXB0IHNlbGVjdHMgYSBzdXBwb3J0ZWQgaW5zdGFsbGVkClB5dGhvbjsgeW91IGNhbiBjaG9vc2Ugb25lIGV4cGxpY2l0bHkgd2l0aCBgUFJWX1BZVEhPTj1weXRob24zLjExYC4KCmBgYGJhc2gKZ2l0IGNsb25lIC0tYnJhbmNoIHYxLjUuMSAtLWRlcHRoIDEgaHR0cHM6Ly9naXRodWIuY29tL3NlYW5lYm9uZXMtbGFuZy9wZXJzb25hbC1SQUcuZ2l0CmNkIHBlcnNvbmFsLVJBRwouL3NjcmlwdHMvc2V0dXAuc2ggLS11aQouL3NjcmlwdHMvdHJ5LWRlbW8uc2gKYGBgCgpUaGUgZGVtbyBpbmRleGVzIG9ubHkgdGhlIHJlcG9zaXRvcnkncyBzeW50aGV0aWMgc2FtcGxlIGluIGAuZGVtby12YXVsdC9gLCB0aGVuCnNlYXJjaGVzIGZvciB0aGUgSmFudWFyeSBpbnZvaWNlIHRvdGFsLiBFeHBlY3Qgc291cmNlIHRleHQgY29udGFpbmluZyAqKiQxLDI0MC41MCoqLgpJdCB1c2VzIHJlYWwgbG9jYWwgZW1iZWRkaW5ncyBhbmQgcmV0cmlldmFsLCBjYWxscyBubyBnZW5lcmF0aW9uIHByb3ZpZGVyLCBhbmQKcmVxdWlyZXMgbm8gQVBJIGtleSBvciBPbGxhbWEgaW5zdGFsbGF0aW9uLiBUaGUgZmlyc3QgcnVuIGRvd25sb2FkcyB0aGUgZW1iZWRkaW5nCm1vZGVsIGZyb20gSHVnZ2luZyBGYWNlIGFuZCBjYW4gdGFrZSBzZXZlcmFsIG1pbnV0ZXMuIFB5dGhvbiBkZXBlbmRlbmNpZXMgYW5kIG1vZGVsCmZpbGVzIG5lZWQgZGlzayBzcGFjZTsgdGhlIGFwcGxpY2F0aW9uIGNhbiBzZWFyY2ggbG9jYWxseSBhZnRlciB0aG9zZSBkb3dubG9hZHMuCgpGb3IgdGhlIGJyb3dzZXIgaW50ZXJmYWNlIHdpdGggdGhhdCBzYW1lIHNhbXBsZSBpbmRleDoKCmBgYGJhc2gKc291cmNlIC52ZW52L2Jpbi9hY3RpdmF0ZQpQUlZfREJfUEFUSD0iJFBXRC8uZGVtby12YXVsdC9jaHJvbWEiIFBSVl9MTE1fUFJPVklERVI9b2xsYW1hIHBlcnNvbmFscmFndmF1bHQgdWkKYGBgCgpPcGVuIGBodHRwOi8vMTI3LjAuMC4xOjg1MDFgLCBzZWxlY3QgKipRdWVyeSoqLCBjaGVjayAqKlJldHJpZXZhbCBvbmx5KiosIGFuZCBhc2sK4oCcV2hhdCB3YXMgdGhlIEphbnVhcnkgaW52b2ljZSB0b3RhbD/igJ0gU2VlIFt0aGUgc2FtcGxlIHdhbGt0aHJvdWdoXShkb2NzL1RSWV9ERU1PLm1kKS4KCioqVmVyc2lvbjoqKiAxLjUuMS4gVXNlIHRoZSBbbWF0Y2hpbmcgR2l0SHViIHJlbGVhc2VdKGh0dHBzOi8vZ2l0aHViLmNvbS9zZWFuZWJvbmVzLWxhbmcvcGVyc29uYWwtUkFHL3JlbGVhc2VzL3RhZy92MS41LjEpCmZvciBhIHdoZWVsLCBzb3VyY2UgYXJjaGl2ZSwgY2hlY2tzdW1zLCBhbmQgaW5zdGFsbGF0aW9uIG5vdGVzLiBSdW4KYHBlcnNvbmFscmFndmF1bHQgLS12ZXJzaW9uYCB0byBpZGVudGlmeSB5b3VyIGluc3RhbGxhdGlvbi4gVGhlcmUgaXMgbm8gUHlQSQpwdWJsaWNhdGlvbiBwcm9taXNlZCBieSB0aGVzZSBpbnN0cnVjdGlvbnMuIFRoZSBvbGQgYHY1LjBgIHRhZyBjb250YWlucyBwYWNrYWdlCjEuNC4xOyBpdCBpcyBhIGhpc3RvcmljYWwgbGFiZWwsIG5vdCBhIG5ld2VyIGRpc3RyaWJ1dGlvbi4gU2VlCltyZWxlYXNlIGFuZCB2ZXJpZmljYXRpb24gZ3VpZGFuY2VdKGRvY3MvUkVMRUFTSU5HLm1kKS4KSW5kZXBlbmRlbnQgdXNlZnVsbmVzcyBhbmQgcmV0cmlldmFsIHF1YWxpdHkgb24geW91ciBvd24gZmlsZXMgc3RpbGwgbmVlZCBldmFsdWF0aW9uLgoKIyMgQWRkIHlvdXIgb3duIGZvbGRlcgoKYGBgYmFzaApzb3VyY2UgLnZlbnYvYmluL2FjdGl2YXRlCnBlcnNvbmFscmFndmF1bHQgaW5nZXN0IC9wYXRoL3RvL3lvdXIvc2FtcGxlLWZvbGRlciAtLXJlY3Vyc2l2ZSAtLWRyeS1ydW4KcGVyc29uYWxyYWd2YXVsdCBpbmdlc3QgL3BhdGgvdG8veW91ci9zYW1wbGUtZm9sZGVyIC0tcmVjdXJzaXZlCnBlcnNvbmFscmFndmF1bHQgcXVlcnkgIldoZXJlIGFyZSBteSBub3RlcyBhYm91dCB0aGlzIHByb2plY3Q/IiAtLW5vLWxsbSAtLWh5YnJpZApgYGAKCkNob29zZSBhIHNtYWxsIGZvbGRlciBmaXJzdC4gVGhlIGRlZmF1bHQgcGVyc29uYWwgaW5kZXggaXMgc2VwYXJhdGUgZnJvbSB0aGUgZGVtbywKYXQgYH4vLnBlcnNvbmFscmFndmF1bHQvY2hyb21hYC4gU2V0IGBQUlZfREJfUEFUSGAgdG8gY2hvb3NlIGFub3RoZXIgaW5kZXguClVzZSBgLS1hbGxvdy1vdXRzaWRlLWhvbWVgIG9ubHkgd2hlbiBkZWxpYmVyYXRlbHkgaW5kZXhpbmcgYSBmb2xkZXIgb3V0c2lkZSB5b3VyIGhvbWUuClNlZSBbaW5zdGFsbGF0aW9uXShJTlNUQUxMLm1kKSwgW2NvbmZpZ3VyYXRpb25dKGRvY3MvY29uZmlndXJhdGlvbi5tZCksIGFuZApbbGFyZ2UgdmF1bHRzXShkb2NzL2xhcmdlLXZhdWx0cy5tZCkgYmVmb3JlIGluZGV4aW5nIGEgbGFyZ2UgY29sbGVjdGlvbi4KCiMjIE9wdGlvbmFsIGdlbmVyYXRlZCBhbnN3ZXJzCgpJbnN0YWxsIFtPbGxhbWFdKGh0dHBzOi8vb2xsYW1hLmNvbS8pLCB0aGVuOgoKYGBgYmFzaApvbGxhbWEgcHVsbCBsbGFtYTMuMjoxYgpwZXJzb25hbHJhZ3ZhdWx0IHF1ZXJ5ICJXaGF0IGRpZCB3ZSBkZWNpZGUgYWJvdXQgdGhpcyBwcm9qZWN0PyIKYGBgCgpMb2NhbCBPbGxhbWEgaXMgdGhlIGRlZmF1bHQgZ2VuZXJhdGlvbiBwcm92aWRlci4gQW4gZXh0ZXJuYWwgT3BlbkFJLWNvbXBhdGlibGUKZW5kcG9pbnQgaXMgYW4gZXhwbGljaXQgY29uZmlndXJhdGlvbiBvcHRpb246IGdlbmVyYXRlZC1hbnN3ZXIgcmVxdWVzdHMgc2VuZApyZXRyaWV2ZWQgY29udGV4dCB0byB0aGF0IGVuZHBvaW50LiBgLS1uby1sbG1gIGRpc2FibGVzIGdlbmVyYXRpb24gcmVxdWVzdHMsCmluY2x1ZGluZyBtb2RlbC1iYXNlZCBxdWVyeSBleHBhbnNpb24uIEVtYmVkZGluZyBhbmQgcmVyYW5rZXIgbW9kZWxzIG1heSBkb3dubG9hZApvbiBmaXJzdCB1c2UuIFJldHJpZXZhbCBtYXRjaGVzIGFuZCBnZW5lcmF0ZWQgY2l0YXRpb25zIG5lZWQgeW91ciByZXZpZXc7IG5laXRoZXIKZXN0YWJsaXNoZXMgdGhhdCBhbiBhbnN3ZXIgaXMgY29ycmVjdC4KCiMjIEZlYXR1cmVzCgp8IEZlYXR1cmUgfCBEZXNjcmlwdGlvbiB8CnwtLS0tLS0tLS18LS0tLS0tLS0tLS0tLXwKfCBJbmdlc3QgfCBQREYsIFRYVCwgTUQsIEpTT04sIERPQ1gsICoqLmljcyBjYWxlbmRhcioqLCAqKnN0cnVjdHVyZWQgQ1NWKiogKG9uZSBkb2N1bWVudCBwZXIgcm93LCBoZWFkZXJzIGFzIGNvbnRleHQpLCAqKmJyb3dzZXIgYm9va21hcmtzKiogKENocm9tZSwgUmFpbmRyb3AsIFBpbmJvYXJkKSwgKipXaGF0c0FwcCBjaGF0cyoqLCAqKk5vdGlvbiBleHBvcnRzKiosICoqaW1hZ2VzIChvcHRpb25hbCBPQ1IpKiosIGFuZCBjb21tb24gY29kZS90ZXh0IGZvcm1hdHMgfAp8IENodW5raW5nIHwgTXVsdGlwbGUgc3RyYXRlZ2llcyAoc2VtYW50aWMsIHByb3NlLCBNYXJrZG93bi9QeXRob24gYXdhcmUpIHwKfCBEZWR1cCB8IFN0YWJsZSBjaHVuayBJRHM7IHJlLWluZ2VzdCB1cGRhdGVzIGluc3RlYWQgb2YgZHVwbGljYXRpbmcgfAp8IFF1ZXJ5IHwgSHlicmlkICsgbXVsdGktcXVlcnkgKyByZXJhbmsgKyBwYXJlbnQgZXhwYW5zaW9uICsgKipzdHJlYW1pbmcgYW5zd2VycyoqIHwKfCBDaXRhdGlvbnMgfCBNb2RlbCBjaXRlcyBzb3VyY2VzOyBDTEkgYXV0b21hdGljYWxseSBleHRyYWN0cyBhbmQgZGlzcGxheXMgdGhlbSB8CnwgRGlhZ25vc3RpY3MgfCBgZG9jdG9yYCArIGBjb25maWcgZWRpdGAgZm9yIHJlbGlhYmxlIGxvY2FsIG9wZXJhdGlvbiB8CnwgV2F0Y2ggfCBEZWJvdW5jZWQgZm9sZGVyIHdhdGNoaW5nIGZvciBhdXRvbWF0aWMgcmUtaW5nZXN0IHwKfCBNYW5hZ2UgfCBgc3RhdHVzYCwgYHB1cmdlYCwgYHJlaW5kZXhgLCBgY29tcGFjdGAsIGV2YWx1YXRpb24gdG9vbHMgfAoKIyMgQ2hvb3NlIGEgcmV0cmlldmFsIHdvcmtmbG93CgotICoqVmVjdG9yIHNlYXJjaDoqKiBzZW1hbnRpYyBtYXRjaGVzIHVzaW5nIENQVSBlbWJlZGRpbmdzLgotICoqSHlicmlkIHNlYXJjaDoqKiB2ZWN0b3IgcmVzdWx0cyBjb21iaW5lZCB3aXRoIFNRTGl0ZSBGVFM1IGtleXdvcmQgc2VhcmNoLCB3aXRoCiAgYSBCTTI1IGZhbGxiYWNrLgotICoqUHJlc2V0czoqKiBgZmFzdGAsIGBiYWxhbmNlZGAsIGFuZCBgcXVhbGl0eWAgY29tYmluZSBvcHRpb25hbCByZXJhbmtpbmcsCiAgaGV1cmlzdGljIG11bHRpLXF1ZXJ5IHJldHJpZXZhbCwgYW5kIHBhcmVudCBjb250ZXh0IGV4cGFuc2lvbi4KLSAqKkV2YWx1YXRpb246KiogY29tcGFyZSByZXRyaWV2YWwgYWdhaW5zdCB5b3VyIGxhYmVsZWQgY2FzZXMgd2l0aCBIaXRAaywgTVJSLAogIGFuZCBORENHQGsuIEEgc2FtcGxlIHJlc3VsdCBpcyBub3QgYSBnZW5lcmFsIGFjY3VyYWN5IGJlbmNobWFyay4KLSAqKkludGVncmF0aW9uczoqKiBgcGVyc29uYWxyYWd2YXVsdCBzZXJ2ZWAgZXhwb3NlcyBhIGxvY2FsIEZhc3RBUEkgaW50ZXJmYWNlOwogIFtBUEkgY29uZmlndXJhdGlvbl0oZG9jcy9jb25maWd1cmF0aW9uLm1kKSBjb3ZlcnMgaXRzIG9wdGlvbmFsIGJlYXJlciB0b2tlbi4KCiMjIEJyb3dzZXIgaW50ZXJmYWNlCgpTdGF0dXMsIEluZ2VzdCwgUXVlcnksIE1vZGVscywgYW5kIE1haW50ZW5hbmNlIHRhYnMgYXJlIGF2YWlsYWJsZSB3aXRoIGAtLXVpYCBzZXR1cC4KS2VlcCB0aGUgaW50ZXJmYWNlIG9uIGxvY2FsaG9zdC4gVXNlIHNhbXBsZSBkb2N1bWVudHMgZm9yIGRlbW9uc3RyYXRpb25zIGFuZCByZXZpZXcKc291cmNlIHByZXZpZXdzIGJlZm9yZSBzaGFyaW5nIHNjcmVlbnNob3RzLgoKfCBTdGF0dXMgfCBRdWVyeSB8CnwtLS0tLS0tLXwtLS0tLS0tfAp8ICFbU3RhdHVzIHRhYl0oZG9jcy9hc3NldHMvc2NyZWVuc2hvdHMvbGF1bmNoLXN0YXR1cy5wbmcpIHwgIVtRdWVyeSB0YWJdKGRvY3MvYXNzZXRzL3NjcmVlbnNob3RzL2xhdW5jaC1xdWVyeS5wbmcpIHwKCiMjIERvY3VtZW50YXRpb24KCi0gW1NhbXBsZSB3YWxrdGhyb3VnaF0oZG9jcy9UUllfREVNTy5tZCkg4oCUIGZpcnN0IGxvY2FsIHNlYXJjaCB3aXRob3V0IGFuIEFQSSBrZXkKLSBbSW5zdGFsbGF0aW9uXShJTlNUQUxMLm1kKSBhbmQgW2dldHRpbmcgc3RhcnRlZF0oZG9jcy9nZXR0aW5nLXN0YXJ0ZWQubWQpCi0gW0NMSSByZWZlcmVuY2VdKGRvY3MvY2xpLXJlZmVyZW5jZS5tZCkgYW5kIFtjb25maWd1cmF0aW9uXShkb2NzL2NvbmZpZ3VyYXRpb24ubWQpCi0gW0FyY2hpdGVjdHVyZV0oZG9jcy9hcmNoaXRlY3R1cmUubWQpIGFuZCBbZXZhbHVhdGlvbl0oZG9jcy9ldmFsdWF0aW9uLm1kKQotIFtGQVFdKGRvY3MvZmFxLm1kKSwgW2xhcmdlIHZhdWx0c10oZG9jcy9sYXJnZS12YXVsdHMubWQpLCBhbmQgW2RvY3VtZW50YXRpb24gaW5kZXhdKGRvY3MvUkVBRE1FLm1kKQotIFtDaGFuZ2Vsb2ddKENIQU5HRUxPRy5tZCkKCiMjIERldmVsb3BtZW50IGFuZCBjb250cmlidXRpb24KCmBgYGJhc2gKLi9zY3JpcHRzL3NldHVwLnNoIC0tZGV2IC0tdWkKc291cmNlIC52ZW52L2Jpbi9hY3RpdmF0ZQpydWZmIGNoZWNrIHNyYyB0ZXN0cwpweXRlc3QgLW0gIm5vdCBpbnRlZ3JhdGlvbiIKYGBgCgpTZWUgW2RldmVsb3BtZW50XShkb2NzL2RldmVsb3BtZW50Lm1kKSwgW0NPTlRSSUJVVElORy5tZF0oQ09OVFJJQlVUSU5HLm1kKSwgYW5kCltDT0RFX09GX0NPTkRVQ1QubWRdKENPREVfT0ZfQ09ORFVDVC5tZCkuIFJlcG9ydCBkZWZlY3RzIGFuZCBjb25mdXNpbmcgaW50ZWdyYXRpb24Kc3RlcHMgaW4gW0dpdEh1YiBpc3N1ZXNdKGh0dHBzOi8vZ2l0aHViLmNvbS9zZWFuZWJvbmVzLWxhbmcvcGVyc29uYWwtUkFHL2lzc3VlcykuCkZvciB2dWxuZXJhYmlsaXR5IHJlcG9ydHMsIGZvbGxvdyBbU0VDVVJJVFkubWRdKFNFQ1VSSVRZLm1kKS4KCiMjIExpY2Vuc2UKCltNSVRdKExJQ0VOU0UpLiBDb3B5cmlnaHQgKGMpIDIwMjYgU2VhbiBNY0Rvbm5lbGwuCg==
+# PersonalRAGVault
+
+Contributing with an agent? Read [AGENTS.md](AGENTS.md) for setup, local checks and project boundaries.
+
+[![CI](https://github.com/seanebones-lang/personal-RAG/actions/workflows/ci.yml/badge.svg)](https://github.com/seanebones-lang/personal-RAG/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+**Find the answer in your own files.** PersonalRAGVault searches PDFs, notes, code,
+and saved exports on your machine. Inspect the matching text and its source, or
+optionally ask a local Ollama model to compose an answer from the retrieved context.
+
+Free under the MIT license. Built by [NextEleven](https://www.nexteleven.dev).
+This is a local Python application with a CLI, an optional browser interface, and
+an HTTP API for integrations.
+
+## Start with the sample, not your documents
+
+Requires Git and **Python 3.10–3.12**. The setup script selects a supported installed
+Python; you can choose one explicitly with `PRV_PYTHON=python3.11`.
+
+```bash
+git clone --branch v1.5.1 --depth 1 https://github.com/seanebones-lang/personal-RAG.git
+cd personal-RAG
+./scripts/setup.sh --ui
+./scripts/try-demo.sh
+```
+
+The demo indexes only the repository's synthetic sample in `.demo-vault/`, then
+searches for the January invoice total. Expect source text containing **$1,240.50**.
+It uses real local embeddings and retrieval, calls no generation provider, and
+requires no API key or Ollama installation. The first run downloads the embedding
+model from Hugging Face and can take several minutes. Python dependencies and model
+files need disk space; the application can search locally after those downloads.
+
+For the browser interface with that same sample index:
+
+```bash
+source .venv/bin/activate
+PRV_DB_PATH="$PWD/.demo-vault/chroma" PRV_LLM_PROVIDER=ollama personalragvault ui
+```
+
+Open `http://127.0.0.1:8501`, select **Query**, check **Retrieval only**, and ask
+“What was the January invoice total?” See [the sample walkthrough](docs/TRY_DEMO.md).
+
+**Version:** 1.5.1. Use the [matching GitHub release](https://github.com/seanebones-lang/personal-RAG/releases/tag/v1.5.1)
+for a wheel, source archive, checksums, and installation notes. Run
+`personalragvault --version` to identify your installation. There is no PyPI
+publication promised by these instructions. The old `v5.0` tag contains package
+1.4.1; it is a historical label, not a newer distribution. See
+[release and verification guidance](docs/RELEASING.md).
+Independent usefulness and retrieval quality on your own files still need evaluation.
+
+## Add your own folder
+
+```bash
+source .venv/bin/activate
+personalragvault ingest /path/to/your/sample-folder --recursive --dry-run
+personalragvault ingest /path/to/your/sample-folder --recursive
+personalragvault query "Where are my notes about this project?" --no-llm --hybrid
+```
+
+Choose a small folder first. The default personal index is separate from the demo,
+at `~/.personalragvault/chroma`. Set `PRV_DB_PATH` to choose another index.
+Use `--allow-outside-home` only when deliberately indexing a folder outside your home.
+See [installation](INSTALL.md), [configuration](docs/configuration.md), and
+[large vaults](docs/large-vaults.md) before indexing a large collection.
+
+## Optional generated answers
+
+Install [Ollama](https://ollama.com/), then:
+
+```bash
+ollama pull llama3.2:1b
+personalragvault query "What did we decide about this project?"
+```
+
+Local Ollama is the default generation provider. An external OpenAI-compatible
+endpoint is an explicit configuration option: generated-answer requests send
+retrieved context to that endpoint. `--no-llm` disables generation requests,
+including model-based query expansion. Embedding and reranker models may download
+on first use. Retrieval matches and generated citations need your review; neither
+establishes that an answer is correct.
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| Ingest | PDF, TXT, MD, JSON, DOCX, **.ics calendar**, **structured CSV** (one document per row, headers as context), **browser bookmarks** (Chrome, Raindrop, Pinboard), **WhatsApp chats**, **Notion exports**, **images (optional OCR)**, and common code/text formats |
+| Chunking | Multiple strategies (semantic, prose, Markdown/Python aware) |
+| Dedup | Stable chunk IDs; re-ingest updates instead of duplicating |
+| Query | Hybrid + multi-query + rerank + parent expansion + **streaming answers** |
+| Citations | Model cites sources; CLI automatically extracts and displays them |
+| Diagnostics | `doctor` + `config edit` for reliable local operation |
+| Watch | Debounced folder watching for automatic re-ingest |
+| Manage | `status`, `purge`, `reindex`, `compact`, evaluation tools |
+
+## Choose a retrieval workflow
+
+- **Vector search:** semantic matches using CPU embeddings.
+- **Hybrid search:** vector results combined with SQLite FTS5 keyword search, with
+  a BM25 fallback.
+- **Presets:** `fast`, `balanced`, and `quality` combine optional reranking,
+  heuristic multi-query retrieval, and parent context expansion.
+- **Evaluation:** compare retrieval against your labeled cases with Hit@k, MRR,
+  and NDCG@k. A sample result is not a general accuracy benchmark.
+- **Integrations:** `personalragvault serve` exposes a local FastAPI interface;
+  [API configuration](docs/configuration.md) covers its optional bearer token.
+
+## Browser interface
+
+Status, Ingest, Query, Models, and Maintenance tabs are available with `--ui` setup.
+Keep the interface on localhost. Use sample documents for demonstrations and review
+source previews before sharing screenshots.
+
+| Status | Query |
+|--------|-------|
+| ![Status tab](docs/assets/screenshots/launch-status.png) | ![Query tab](docs/assets/screenshots/launch-query.png) |
+
+## Documentation
+
+- [Sample walkthrough](docs/TRY_DEMO.md) — first local search without an API key
+- [Installation](INSTALL.md) and [getting started](docs/getting-started.md)
+- [CLI reference](docs/cli-reference.md) and [configuration](docs/configuration.md)
+- [Architecture](docs/architecture.md) and [evaluation](docs/evaluation.md)
+- [FAQ](docs/faq.md), [large vaults](docs/large-vaults.md), and [documentation index](docs/README.md)
+- [Changelog](CHANGELOG.md)
+
+## Development and contribution
+
+```bash
+./scripts/setup.sh --dev --ui
+source .venv/bin/activate
+ruff check src tests
+pytest -m "not integration"
+```
+
+See [development](docs/development.md), [CONTRIBUTING.md](CONTRIBUTING.md), and
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Report defects and confusing integration
+steps in [GitHub issues](https://github.com/seanebones-lang/personal-RAG/issues).
+For vulnerability reports, follow [SECURITY.md](SECURITY.md).
+
+## Contributors
+
+- **James Van Daele** ([@cexplayer01](https://github.com/cexplayer01)) — structured CSV parser: every row lands as a self-describing, individually citable record (Backlog Wave 8, PR #6).
+
+## License
+
+[MIT](LICENSE). Copyright (c) 2026 Sean McDonnell.
