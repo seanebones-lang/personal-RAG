@@ -149,6 +149,94 @@ def test_registry_routes_generic_html_through_the_parser(html_path):
     assert "autumn watch begins" in docs[0].text
 
 
+def test_class_marked_prose_sidebar_is_excluded(tmp_path):
+    article = (
+        "The winter ferry queue forms before dawn on the stone quay, and "
+        "the ticket window opens when the harbour bell rings twice, with "
+        "freight loaded first and foot passengers called by name from "
+        "the ledger the clerk keeps by the stove each dark morning."
+    )
+    sidebar = (
+        "Our harbour walks leave every hour from the green gate, rain or "
+        "shine, and the gift shop by the pier sells charts, postcards "
+        "and brass lamps to visitors all season long."
+    )
+    page = (
+        "<html><head><title>Quay Notes</title></head><body>"
+        f"<div><p>{article}</p></div>"
+        f'<div class="sidebar"><p>{sidebar}</p></div>'
+        "</body></html>"
+    )
+    docs = HtmlMainContentParser().extract(_write(tmp_path, "sb.html", page))
+
+    assert len(docs) == 1
+    assert "winter ferry queue" in docs[0].text
+    assert "gift shop" not in docs[0].text
+
+
+def test_class_marked_content_div_beats_denser_plain_div(tmp_path):
+    plain = "The granite quarry above the town ships dressed stone by rail. " * 5
+    marked = (
+        "The lighthouse log for the last week of October records three "
+        "gales, one lost anchor, and a supply boat turned back twice by "
+        "the swell at the harbour mouth before it landed its crates on "
+        "the third morning, to everyone's relief."
+    )
+    page = (
+        "<html><head><title>Log</title></head><body>"
+        f"<div><p>{plain}</p></div>"
+        f'<div class="post-content"><p>{marked}</p></div>'
+        "</body></html>"
+    )
+    docs = HtmlMainContentParser().extract(_write(tmp_path, "mc.html", page))
+
+    assert len(docs) == 1
+    assert docs[0].extra_metadata["main_element"] == "div"
+    assert "lighthouse log" in docs[0].text
+    assert "granite quarry" not in docs[0].text
+
+
+def test_semantic_article_beats_class_marked_div(tmp_path):
+    article = (
+        "The signal station on the headland flies its flags from the "
+        "first light, and the keeper notes each passing hull in the "
+        "leather book, with the weather glass read at noon and the "
+        "lamp lit before the evening boat rounds the point."
+    )
+    filler = "The tide gauge at the pier foot is read twice a day. " * 7
+    page = (
+        "<html><head><title>Headland</title></head><body>"
+        f'<div class="content"><p>{filler}</p></div>'
+        f"<article><p>{article}</p></article>"
+        "</body></html>"
+    )
+    docs = HtmlMainContentParser().extract(_write(tmp_path, "sa.html", page))
+
+    assert len(docs) == 1
+    assert docs[0].extra_metadata["main_element"] == "article"
+    assert "signal station" in docs[0].text
+    assert "tide gauge" not in docs[0].text
+
+
+def test_chrome_class_on_article_does_not_prune_it(tmp_path):
+    prose = (
+        "The boatwright's yard behind the custom house smells of tar "
+        "and fresh pine, and the new yawl on the slips has her ribs "
+        "steamed and set, waiting on the keel bolts the smith promised "
+        "before the spring tides come back to the harbour."
+    )
+    page = (
+        "<html><head><title>Yard</title></head><body>"
+        f'<article class="promo"><p>{prose}</p></article>'
+        "</body></html>"
+    )
+    docs = HtmlMainContentParser().extract(_write(tmp_path, "cp.html", page))
+
+    assert len(docs) == 1
+    assert docs[0].extra_metadata["main_element"] == "article"
+    assert "boatwright" in docs[0].text
+
+
 def test_registry_still_routes_bookmark_exports_to_bookmarks(tmp_path):
     page = (
         "<!DOCTYPE NETSCAPE-Bookmark-file-1><HTML><HEAD>"

@@ -15,25 +15,40 @@ element's block-level text in document order. The pipeline chunks the
 result as usual, so blocks stay in reading order and the title travels
 with the first chunk.
 
-Main-content selection is structural only — no class/id guessing:
+Main-content selection is structural first, with conservative class/id
+signals layered on top for the div-soup pages semantic markup misses:
 - Subtrees that are chrome by tag are pruned wherever they appear:
   script, style, noscript, template, iframe, svg, nav, footer, aside,
   form, button, select, textarea. A <header> is pruned only at page
   level (a direct child of <body>/<html>); inside an article it usually
   carries the headline and is kept.
+- A plain <div>/<section> whose class/id carries a clear chrome token
+  (nav, sidebar, footer, header, promo, share, social, comment,
+  related, cookie, popup, modal, menu, breadcrumb, pagination, advert
+  and kin — word-boundary tokens only) is pruned the same way. The
+  signal never applies to semantic elements: an <article class="promo">
+  is still an article and is kept.
 - The first substantial <article> wins; else the first substantial
   <main>; else the container (div/section/body) whose block text yield
-  is highest. "Substantial" means at least MIN_MAIN_CHARS of block text.
+  is highest — except that a candidate whose class/id carries a
+  main-content token (article, content, post, story, entry, body) and
+  is itself substantial outranks the raw density winner. Semantic
+  elements still outrank every class/id signal.
 - Link farms are not content: a block or container whose text is at
   least 80% link text and no longer than a sentence or two is skipped,
   which is what keeps div-soup navigation out of the density fallback.
+- "Substantial" means at least MIN_MAIN_CHARS of block text. When a
+  page carries no class/id signals at all, selection is purely
+  structural, exactly as the first version behaved.
 
 Deliberate limits (this parser declines rather than guesses):
 - Less than MIN_MAIN_CHARS of extractable main content -> returns [] so
   the existing plain-text fallback keeps behaviour for splash pages,
   redirect stubs and script-only shells instead of indexing a guess.
-- No class/id heuristics: a "sidebar" that is a plain <div> full of
-  prose will be treated as prose. Semantic markup is the contract.
+- No readability-style scoring: no text-density ratios, punctuation or
+  paragraph-shape heuristics beyond block yield and the token signals
+  above, and no guessing at class/id names outside the token lists — a
+  "sidebar" marked with an unlisted name is still treated as prose.
 - Caps mirror the CSV parser: at most MAX_BLOCKS blocks per page and
   MAX_BLOCK_CHARS per block, so a pathological page cannot flood the
   vault; input is also capped at MAX_INPUT_CHARS for the same reason.
@@ -44,6 +59,7 @@ Deliberate limits (this parser declines rather than guesses):
 from __future__ import annotations
 
 import logging
+import re
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -115,15 +131,56 @@ _VOID_TAGS = frozenset(
 _LINK_FARM_DENSITY = 0.8
 _LINK_FARM_MAX_CHARS = 120
 
+# Class/id token signals (word-boundary tokens, split on non-alphanumerics
+# and case-folded: "site-sidebar" -> {"site", "sidebar"}). Negative tokens
+# mark chrome, but only on plain <div>/<section> containers — never on
+# semantic elements. Positive tokens mark likely main content and only
+# reorder the density fallback; semantic <article>/<main> still win.
+_CHROME_TOKENS = frozenset(
+    {
+        "nav",
+        "sidebar",
+        "footer",
+        "header",
+        "promo",
+        "promotion",
+        "share",
+        "social",
+        "comment",
+        "related",
+        "cookie",
+        "popup",
+        "modal",
+        "menu",
+        "breadcrumb",
+        "pagination",
+        "advert",
+        "ads",
+    }
+)
+_CONTENT_TOKENS = frozenset({"article", "content", "post", "story", "entry", "body"})
+_TOKEN_SPLIT = re.compile(r"[^a-z0-9]+")
+
 
 class _Node:
     """Minimal element node: a tag plus ordered children (nodes/strings)."""
 
-    __slots__ = ("tag", "children")
+    __slots__ = ("tag", "children", "attrs")
 
-    def __init__(self, tag: str) -> None:
+    def __init__(self, tag: str, attrs: Optional[dict] = None) -> None:
         self.tag = tag
         self.children: List[_Node | str] = []
+        self.attrs: dict = attrs or {}
+
+
+def _class_id_tokens(node: _Node) -> frozenset:
+    """Word-boundary tokens from a node's class and id attributes."""
+    tokens: set[str] = set()
+    for attr in ("class", "id"):
+        value = node.attrs.get(attr)
+        if value:
+            tokens.update(t for t in _TOKEN_SPLIT.split(value.lower()) if t)
+    return frozenset(tokens)
 
 
 class _TreeBuilder(HTMLParser):
@@ -139,13 +196,13 @@ class _TreeBuilder(HTMLParser):
         self._stack: List[_Node] = [self.root]
 
     def handle_starttag(self, tag: str, attrs: list) -> None:
-        node = _Node(tag)
+        node = _Node(tag, dict(attrs))
         self._stack[-1].children.append(node)
         if tag not in _VOID_TAGS:
             self._stack.append(node)
 
     def handle_startendtag(self, tag: str, attrs: list) -> None:
-        self._stack[-1].children.append(_Node(tag))
+        self._stack[-1].children.append(_Node(tag, dict(attrs)))
 
     def handle_endtag(self, tag: str) -> None:
         for i in range(len(self._stack) - 1, 0, -1):
@@ -170,6 +227,8 @@ def _prune(node: _Node, page_level: bool = False) -> None:
             if child.tag in _SKIP_SUBTREES:
                 continue
             if child.tag == "header" and page_level:
+                continue
+            if child.tag in ("div", "section") and _class_id_tokens(child) & _CHROME_TOKENS:
                 continue
             _prune(child, page_level=child.tag in ("html", "body"))
         kept.append(child)
@@ -326,11 +385,22 @@ def _select_main(root: _Node) -> Tuple[Optional[_Node], List[str]]:
     best = None
     best_blocks = []
     best_len = 0
+    marked = None
+    marked_blocks: List[str] = []
+    marked_len = 0
     for node in _candidates(root):
         blocks = _blocks_from(node)
         total = sum(len(b) for b in blocks)
         if total > best_len:
             best, best_blocks, best_len = node, blocks, total
+        if (
+            total >= MIN_MAIN_CHARS
+            and total > marked_len
+            and _class_id_tokens(node) & _CONTENT_TOKENS
+        ):
+            marked, marked_blocks, marked_len = node, blocks, total
+    if marked is not None:
+        return marked, marked_blocks
     if best is not None and best_len >= MIN_MAIN_CHARS:
         return best, best_blocks
     return None, []
