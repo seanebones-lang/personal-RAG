@@ -141,7 +141,7 @@ For vulnerability reports, follow [SECURITY.md](SECURITY.md).
 
 ## Contributors
 
-- **James Van Daele** ([@cexplayer01](https://github.com/cexplayer01)) — structured CSV parser: every row lands as a self-describing, individually citable record (Backlog Wave 8, PR #6).
+- **James Van Daele** ([@cexplayer01](https://github.com/cexplayer01)) — structured CSV parser: every row lands as a self-describing, individually citable record (Backlog Wave 8, PR #6); HTML main-content parser: saved pages are ingested as their article text with boilerplate stripped (Backlog Wave 8, PR #10).
 
 ## License
 
