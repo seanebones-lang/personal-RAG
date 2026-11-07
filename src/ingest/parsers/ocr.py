@@ -52,7 +52,7 @@ class OCRParser(BaseParser):
             return []
 
         try:
-            img = Image.open(file_path)
+            img: Image.Image = Image.open(file_path)
             # Robustness enhancements: convert to grayscale, enhance contrast, sharpen
             if img.mode != "L":
                 img = img.convert("L")
@@ -60,8 +60,12 @@ class OCRParser(BaseParser):
             img = enhancer.enhance(1.5)
             img = img.filter(ImageFilter.SHARPEN)
             # Optional deskew / invert if very dark (simple heuristic)
-            if ImageOps.invert(img).getextrema()[0] < 50:  # rough dark check
-                img = ImageOps.invert(img)
+            inverted = ImageOps.invert(img)
+            # getextrema() is per band: a flat (min, max) pair for "L",
+            # one pair per band otherwise — take the overall minimum.
+            band_mins = [e[0] if isinstance(e, tuple) else e for e in inverted.getextrema()]
+            if min(band_mins) < 50:  # rough dark check
+                img = inverted
 
             text = pytesseract.image_to_string(img)
             if text.strip():
