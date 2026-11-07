@@ -11,6 +11,7 @@ from src.ingest.parsers.bookmarks import BookmarksHTMLParser
 from src.ingest.parsers.csv_parser import CsvParser
 from src.ingest.parsers.eml import EmlParser
 from src.ingest.parsers.epub import EpubParser
+from src.ingest.parsers.html_parser import HtmlMainContentParser
 from src.ingest.parsers.ics import IcsParser
 from src.ingest.parsers.mbox import MboxParser
 from src.ingest.parsers.notion import NotionParser
@@ -41,7 +42,11 @@ def _init_registry() -> None:
     _register(CsvParser)
     _register(TelegramParser)
     _register(IcsParser)
+    # .html/.htm: bookmark exports are claimed by BookmarksHTMLParser
+    # (it returns [] for anything else); the main-content parser takes
+    # the generic pages it declines.
     _register(BookmarksHTMLParser)
+    _register(HtmlMainContentParser)
     _register(RaindropParser)
     _register(PinboardParser)
     _register(WhatsAppParser)
