@@ -17,6 +17,10 @@ class ExtractedDocument:
 
 class BaseParser:
     extensions: frozenset[str] = frozenset()
+    # Exact file names claimed regardless of suffix, for formats whose
+    # canonical on-disk name carries no extension (e.g. Chromium's
+    # "History" store). Empty for nearly every parser.
+    filenames: frozenset[str] = frozenset()
 
     def extract(self, file_path: Path) -> List[ExtractedDocument]:
         raise NotImplementedError

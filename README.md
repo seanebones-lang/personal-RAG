@@ -85,7 +85,7 @@ establishes that an answer is correct.
 
 | Feature | Description |
 |---------|-------------|
-| Ingest | PDF, TXT, MD, JSON, DOCX, **.ics calendar**, **structured CSV** (one document per row, headers as context), **HTML pages** (main content extracted, boilerplate stripped), **browser bookmarks** (Chrome, Raindrop, Pinboard), **WhatsApp chats**, **Notion exports**, **images (optional OCR)**, and common code/text formats |
+| Ingest | PDF, TXT, MD, JSON, DOCX, **.ics calendar**, **structured CSV** (one document per row, headers as context), **HTML pages** (main content extracted, boilerplate stripped), **browser bookmarks** (Chrome, Raindrop, Pinboard), **browser history** (opt-in via `PRV_INGEST_BROWSER_HISTORY`; Chromium-family and Firefox stores, one document per visited page), **WhatsApp chats**, **Notion exports**, **images (optional OCR)**, and common code/text formats |
 | Chunking | Multiple strategies (semantic, prose, Markdown/Python aware) |
 | Dedup | Stable chunk IDs; re-ingest updates instead of duplicating |
 | Query | Hybrid + multi-query + rerank + parent expansion + **streaming answers** |

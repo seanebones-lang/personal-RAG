@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Set
 
 from src.config import get_settings
-from src.ingest.parsers.registry import registered_extensions
+from src.ingest.parsers.registry import registered_extensions, registered_filenames
 
 logger = logging.getLogger(__name__)
 
@@ -73,18 +73,23 @@ def discover_files(folder: Path, recursive: bool = False) -> List[Path]:
     (see Settings.ingest_exclude_dirs / PRV_INGEST_EXCLUDE_DIRS), e.g. .obsidian, .git.
     """
     extensions = all_supported_extensions()
+    # A few formats are claimed by exact file name rather than suffix
+    # (e.g. Chromium's extensionless "History" store, opt-in only).
+    filenames = registered_filenames()
     exclude_dirs = get_settings().ingest_exclude_dirs
     files: List[Path] = []
     if recursive:
         for f in folder.rglob("*"):
-            if not f.is_file() or f.suffix.lower() not in extensions:
+            if not f.is_file():
+                continue
+            if f.suffix.lower() not in extensions and f.name not in filenames:
                 continue
             if _path_has_excluded_dir(f, folder, exclude_dirs):
                 continue
             files.append(f)
     else:
         for f in folder.iterdir():
-            if f.is_file() and f.suffix.lower() in extensions:
+            if f.is_file() and (f.suffix.lower() in extensions or f.name in filenames):
                 files.append(f)
     return sorted(files)
 

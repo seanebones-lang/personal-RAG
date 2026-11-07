@@ -185,6 +185,7 @@ class Settings:
     response_cache_max_size: int
     ingest_batch_size: int
     ingest_exclude_dirs: frozenset[str]
+    ingest_browser_history: bool
     hybrid_default: bool
     query_preset: str | None
     collection_name: str = "personal_knowledge"
@@ -270,6 +271,9 @@ class Settings:
             ingest_exclude_dirs=_parse_ingest_exclude_dirs(
                 os.environ.get("PRV_INGEST_EXCLUDE_DIRS")
             ),
+            # Browser history is sensitive: the history parser registers
+            # only when the user explicitly opts in (default off).
+            ingest_browser_history=_bool_env("PRV_INGEST_BROWSER_HISTORY", False),
             # Callers (CLI/API/UI) should pass hybrid=get_settings().hybrid_default
             # when the user does not explicitly override; run_query keeps hybrid: bool = False.
             hybrid_default=_bool_env("PRV_HYBRID", False),
