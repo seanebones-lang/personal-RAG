@@ -28,7 +28,7 @@ format:
 	ruff format src tests
 
 typecheck:
-	mypy src || true
+	mypy src --python-version 3.12
 
 check: lint test
 

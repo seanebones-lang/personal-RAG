@@ -23,7 +23,7 @@ class CheckResult:
     detail: Optional[str] = None
 
 
-def _human_bytes(n: int) -> str:
+def _human_bytes(n: float) -> str:
     for unit in ["B", "KB", "MB", "GB"]:
         if n < 1024:
             return f"{n:.1f}{unit}"

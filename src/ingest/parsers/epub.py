@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class EpubParser(BaseParser):
     """Extract text from EPUB files."""
 
-    extensions = {".epub"}
+    extensions = frozenset({".epub"})
 
     def extract(self, file_path: Path) -> List[ExtractedDocument]:
         try:
